@@ -7,7 +7,7 @@
 struct snake {
   float xCord, yCord;   // Cordinates
   float xVel, yVel;     // Velocity
-  int angle;
+  double angle;
   int wind_Width, wind_Height;
   SDL_Renderer *pRenderer;
   SDL_Texture *pTexture;
@@ -23,7 +23,7 @@ Snake *createSnake(int x, int y, SDL_Renderer *pRenderer, int wind_Width, int wi
     pSnke->wind_Height = wind_Height;
 
     // Load the image
-    SDL_Surface *pSurface = IMG_Load("resources/Ship.png");
+    SDL_Surface *pSurface = IMG_Load("resources/ship.png");
     if (!pSurface) {
         printf("Error: %s\n", SDL_GetError());
         return NULL;
@@ -51,21 +51,21 @@ Snake *createSnake(int x, int y, SDL_Renderer *pRenderer, int wind_Width, int wi
 }
 
 void accelerate(Snake *pSnke) {
-    pSnke->xVel = 0.1*sin(pSnke->angle*2*PI/360);
-    pSnke->yVel = 0.1*cos(pSnke->angle*2*PI/360);
+    pSnke->xVel = 0.75*sin(pSnke->angle*2*PI/360);
+    pSnke->yVel = -(0.75*cos(pSnke->angle*2*PI/360));
 }
 
 void turnLeft(Snake *pSnke) {
-    pSnke->angle-=5;
+    pSnke->angle-=5.0;
 }
 
 void turnRight(Snake *pSnke) {
-    pSnke->angle+=5;
+    pSnke->angle+=5.0;
 }
 
 void updateRocket(Snake *pSnke) {
-    pSnke->xCord += pSnke->xVel;
-    pSnke->yCord += pSnke->yVel;
+    pSnke->xCord += pSnke->xVel = 0.75*sin(pSnke->angle*(2*PI/360));
+    pSnke->yCord += pSnke->yVel = -(0.75*cos(pSnke->angle*(2*PI/360)));
 
     if (pSnke->xCord < 0) {
         pSnke->xCord += pSnke-> wind_Width;
