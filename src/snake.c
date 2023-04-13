@@ -23,7 +23,7 @@ Snake *createSnake(int x, int y, SDL_Renderer *pRenderer, int wind_Width, int wi
     pSnke->wind_Height = wind_Height;
 
     // Load the image
-    SDL_Surface *pSurface = IMG_Load("resources/ship.png");
+    SDL_Surface *pSurface = IMG_Load("resources/snake.png");
     if (!pSurface) {
         printf("Error: %s\n", SDL_GetError());
         return NULL;
