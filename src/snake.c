@@ -41,8 +41,8 @@ Snake *createSnake(int x, int y, SDL_Renderer *pRenderer, int wind_Width, int wi
     SDL_QueryTexture(pSnke->pTexture, NULL, NULL, 
       &(pSnke->snkRect.w),&(pSnke->snkRect.h));
 
-    pSnke->snkRect.w /= 4;
-    pSnke->snkRect.h /= 4;
+    pSnke->snkRect.w /= 8;
+    pSnke->snkRect.h /= 8;
     pSnke->xCord = x - pSnke->snkRect.w / 2;
     pSnke->yCord = y - pSnke->snkRect.h / 2;
 
