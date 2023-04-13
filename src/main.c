@@ -14,7 +14,7 @@ typedef struct game {
 
 int initStructure(Game *pGame);
 int displayError(Game *pGame);
-void closeGame(Game *pGame);
+void close(Game *pGame);
 void run(Game *pGame);
 void handleInput(Game *pGame, SDL_Event *pEvent);
 void createCanvas(Game *pGame);
