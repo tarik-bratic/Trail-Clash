@@ -4,6 +4,7 @@
 
 #define WINDOW_HEIGHT 500
 #define WINDOW_WIDTH 800
+#define one_ms 1000/60-15
 
 typedef struct game {
   SDL_Window *pWindow;
@@ -12,19 +13,19 @@ typedef struct game {
 } Game;
 
 int initStructure(Game *pGame);
-void close(Game *pGame);
+int displayError(Game *pGame);
+void closeGame(Game *pGame);
 void run(Game *pGame);
 void handleInput(Game *pGame, SDL_Event *pEvent);
 void createCanvas(Game *pGame);
-int displayError(Game *pGame);
 
 int main(int argv, char** args) {
+  
   Game g;
 
   initStructure(&g);
   run(&g);
   close(&g);
-  
 
   return 0;
 
@@ -66,9 +67,8 @@ void run(Game *pGame) {
 
     updateRocket(pGame->pSnk);
     createCanvas(pGame);
-    accelerate(pGame->pSnk);
 
-    SDL_Delay(1000/60-15);
+    SDL_Delay(one_ms);
 
   }
 }
@@ -76,10 +76,6 @@ void run(Game *pGame) {
 void handleInput(Game *pGame, SDL_Event *pEvent) {
   if(pEvent->type == SDL_KEYDOWN){
         switch(pEvent->key.keysym.scancode){
-            case SDL_SCANCODE_W:
-            case SDL_SCANCODE_UP:
-                accelerate(pGame->pSnk);
-                break;
             case SDL_SCANCODE_A:
             case SDL_SCANCODE_LEFT:
                 turnLeft(pGame->pSnk);
