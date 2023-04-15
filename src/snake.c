@@ -63,25 +63,26 @@ void turnRight(Snake *pSnke) {
     pSnke->angle+=5.0;
 }
 
-void updateRocket(Snake *pSnke) {
-    pSnke->xCord += pSnke->xVel = 0.75*sin(pSnke->angle*(2*PI/360));
-    pSnke->yCord += pSnke->yVel = -(0.75*cos(pSnke->angle*(2*PI/360)));
+void updateRocket(Snake *pSnk) {
+    pSnk->xCord += pSnk->xVel = 0.75*sin(pSnk->angle*(2*PI/360));
+    pSnk->yCord += pSnk->yVel = -(0.75*cos(pSnk->angle*(2*PI/360)));
 
-    if (pSnke->xCord < 0) {
-        pSnke->xCord += pSnke-> wind_Width;
-    } else if (pSnke->xCord > pSnke->wind_Width) {
-        pSnke->xCord -= pSnke->wind_Width;
+    if (pSnk->xCord < 0) {
+        pSnk->xCord = 0;
+    } else if (pSnk->xCord > pSnk->wind_Width - pSnk->snkRect.w) {
+        pSnk->xCord = pSnk->wind_Width - pSnk->snkRect.w;
     }
 
-    if (pSnke->yCord < 0) {
-        pSnke->yCord += pSnke->wind_Height;
-    } else if (pSnke->yCord > pSnke->wind_Height) {
-        pSnke->yCord -= pSnke->wind_Height;
+    if (pSnk->yCord < 0) {
+        pSnk->yCord = 0;
+    } else if (pSnk->yCord > pSnk->wind_Height - pSnk->snkRect.h) {
+        pSnk->yCord = pSnk->wind_Height - pSnk->snkRect.h;
     }
 
-    pSnke->snkRect.x = pSnke->xCord;
-    pSnke->snkRect.y = pSnke->yCord;
+    pSnk->snkRect.x = pSnk->xCord;
+    pSnk->snkRect.y = pSnk->yCord;
 }
+
 
 void drawRocket(Snake *pSnke) {
     SDL_RenderCopyEx(pSnke->pRenderer, pSnke->pTexture, NULL,
