@@ -18,22 +18,12 @@ struct clientData {
 };
 typedef struct clientData ClientData;
 
-struct bulletData {
-
-    float xCord, yCord;
-    float xVel, yVel;
-    int time;
-
-};
-typedef struct bulletData BulletData;  
-
 // Represent the snakes data
 struct snakeData {
 
     float xCord, yCord;
     float xVel, yVel;
     int angle, alive;
-    BulletData bData;
 
 };
 typedef struct snakeData SnakeData; 
@@ -46,5 +36,22 @@ struct serverData {
 
 };
 typedef struct serverData ServerData;
+
+/* Snake stuct (cords, vel, angle, render, texture, rect, bullet) */
+struct snake {
+
+  float xCord, yCord;
+  float xVel, yVel;
+  float xSrt, ySrt;
+  double angle, alive;
+
+  int wind_Width, wind_Height;
+
+  SDL_Renderer *pRenderer;
+  SDL_Texture *pTexture;
+  SDL_Rect snkeRect;
+
+};
+typedef struct snake Snake;
 
 #endif
