@@ -83,11 +83,6 @@ int init_structure(Game *pGame) {
   pGame->pWindow = SDL_CreateWindow("Trail Clash - client", SDL_WINDOWPOS_CENTERED, 
     SDL_WINDOWPOS_CENTERED, WINDOW_WIDTH, WINDOW_HEIGHT, 0);
 
-  int width;
-  int height;
-  SDL_GetWindowSize(pGame->pWindow, &width, &height);
-  printf("W: %d, H: %d", width, height);
-
   if (!pGame->pWindow) {
     printf("Error (window): %s\n", SDL_GetError());
     close(pGame);
@@ -119,7 +114,7 @@ int init_structure(Game *pGame) {
     return 0;
   }
 
-  if (SDLNet_ResolveHost(&(pGame->serverAdd), "192.168.56.1", 2000)) {
+  if (SDLNet_ResolveHost(&(pGame->serverAdd), "192.168.68.114", 2000)) {
     printf("SDLNet_ResolveHost (127.0.0.1: 2000): %s\n", SDLNet_GetError());
     return 0;
   }
