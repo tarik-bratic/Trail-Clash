@@ -3,27 +3,26 @@
 #include <SDL2/SDL_image.h>
 #include "../include/data.h"
 #include "../include/snake.h"
-#include "../include/bullet.h"
 
 #define PI 3.14
 
 /* Snake stuct (cords, vel, angle, render, texture, rect, bullet) */
-struct snake {
+// struct snake {
 
-  float xCord, yCord;
-  float xVel, yVel;
-  float xSrt, ySrt;
-  double angle, alive;
+//   float xCord, yCord;
+//   float xVel, yVel;
+//   float xSrt, ySrt;
+//   double angle, alive;
 
-  int wind_Width, wind_Height;
+//   int wind_Width, wind_Height;
 
-  SDL_Renderer *pRenderer;
-  SDL_Texture *pTexture;
-  SDL_Rect snkeRect;
+//   SDL_Renderer *pRenderer;
+//   SDL_Texture *pTexture;
+//   SDL_Rect snkeRect;
 
-  Bullet *pBullet;
+//   Bullet *pBullet;
 
-};
+// };
 
 /* Function to create a snake with attributes with default values */
 Snake *create_snake(int number, SDL_Renderer *pRenderer, int wind_Width, int wind_Height) {
@@ -36,8 +35,6 @@ Snake *create_snake(int number, SDL_Renderer *pRenderer, int wind_Width, int win
     pSnke->angle = 0;
     pSnke->wind_Width = wind_Width;
     pSnke->wind_Height = wind_Height;
-    
-    pSnke->pBullet = create_bullet(wind_Width, wind_Height);
 
     // Load image
     SDL_Surface *pSurface = IMG_Load("../lib/resources/snake.png");
@@ -113,9 +110,6 @@ void update_snake(Snake *pSnke) {
     pSnke->snkeRect.x = pSnke->xCord;
     pSnke->snkeRect.y = pSnke->yCord;
 
-    if (!alive_bullet(pSnke->pBullet)) return;
-    update_bullet(pSnke->pBullet);
-
 }
 
 /* Reset the snake to default values */
@@ -125,12 +119,10 @@ void reset_snake(Snake *pSnke) {
     pSnke->angle=0;
     pSnke->xVel=pSnke->yVel=0;
     pSnke->alive = 1;
-    kill_bullet(pSnke->pBullet);
 }
 
 /* Render a copy of a snake */
 void draw_snake(Snake *pSnke) {
-    if (alive_bullet(pSnke->pBullet)) draw_bullet(pSnke->pBullet, pSnke->pRenderer);
     SDL_RenderCopyEx(pSnke->pRenderer, pSnke->pTexture, NULL,
         &(pSnke->snkeRect), pSnke->angle, NULL, SDL_FLIP_NONE);
 }
@@ -138,7 +130,6 @@ void draw_snake(Snake *pSnke) {
 /* Destory snake texture and free */
 void destroy_snake(Snake *pSnke){
     SDL_DestroyTexture(pSnke->pTexture);
-    destroy_bullet(pSnke->pBullet);
     free(pSnke);
 }
 
@@ -150,7 +141,6 @@ void update_snakeData(Snake *pSnke, SnakeData *pSnkeData) {
     pSnkeData->yVel = pSnke->yVel;
     pSnkeData->xCord = pSnke->xCord;
     pSnkeData->yCord = pSnke->yCord;
-    send_bullet_data(pSnke->pBullet, &(pSnkeData->bData));
 }
 
 /* Update snake data to snake (angle, cord, vel)*/
@@ -161,5 +151,4 @@ void update_recived_snake_data(Snake *pSnke, SnakeData *pSnkeData) {
     pSnke->yVel = pSnkeData->yVel;
     pSnke->xCord = pSnkeData->xCord;
     pSnke->yCord = pSnkeData->yCord;
-    update_recived_bullet_data(pSnke->pBullet,&(pSnkeData->bData));
 }
