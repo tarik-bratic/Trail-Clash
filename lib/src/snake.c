@@ -6,24 +6,6 @@
 
 #define PI 3.14
 
-/* Snake stuct (cords, vel, angle, render, texture, rect, bullet) */
-// struct snake {
-
-//   float xCord, yCord;
-//   float xVel, yVel;
-//   float xSrt, ySrt;
-//   double angle, alive;
-
-//   int wind_Width, wind_Height;
-
-//   SDL_Renderer *pRenderer;
-//   SDL_Texture *pTexture;
-//   SDL_Rect snkeRect;
-
-//   Bullet *pBullet;
-
-// };
-
 /* Function to create a snake with attributes with default values */
 Snake *create_snake(int number, SDL_Renderer *pRenderer, int wind_Width, int wind_Height) {
 
