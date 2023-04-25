@@ -3,16 +3,22 @@
 #include "../include/snake.h"
 
 #define PI 3.14
+#define MAX_TRAIL_LENGTH 100
+#define MAX_TRAIL_POINTS 100000000
 
 struct snake {
   float xCord, yCord;
   float xVel, yVel;
   double angle;
   int wind_Width, wind_Height;
+  int trailLength;
+  int trailCounter;
   SDL_Renderer *pRenderer;
   SDL_Texture *pTexture;
   SDL_Rect snkeRect;
+  SDL_Rect trailPoints[MAX_TRAIL_POINTS];
 };
+
 
 Snake *create_snake(int x, int y, SDL_Renderer *pRenderer, int wind_Width, int wind_Height) {
 
@@ -22,11 +28,14 @@ Snake *create_snake(int x, int y, SDL_Renderer *pRenderer, int wind_Width, int w
     pSnke->xVel = 0;
     pSnke->yVel = 0;
     pSnke->angle = 0;
+    pSnke->trailLength = 0;
+    pSnke->trailCounter = 0;
     pSnke->wind_Width = wind_Width;
     pSnke->wind_Height = wind_Height;
+    
 
     // Load image
-    SDL_Surface *pSurface = IMG_Load("resources/snake.png");
+    SDL_Surface *pSurface = IMG_Load("resources/square.png");
     if (!pSurface) {
         printf("Error: %s\n", SDL_GetError());
         return NULL;
@@ -47,13 +56,12 @@ Snake *create_snake(int x, int y, SDL_Renderer *pRenderer, int wind_Width, int w
       &(pSnke->snkeRect.w), &(pSnke->snkeRect.h));
 
     // Set start position on the center
-    pSnke->snkeRect.w /= 8;
-    pSnke->snkeRect.h /= 8;
+    pSnke->snkeRect.w /= 24;
+    pSnke->snkeRect.h /= 24;
     pSnke->xCord = x - pSnke->snkeRect.w / 2;
     pSnke->yCord = y - pSnke->snkeRect.h / 2;
 
     return pSnke;
-
 }
 
 /*void accelerate(Snake *pSnke) {
@@ -72,33 +80,59 @@ void turn_right(Snake *pSnke) {
     pSnke->angle += 5.0;
 }
 
+
 void update_snake(Snake *pSnke) {
 
-    // Update coardinates
-    pSnke->xCord += pSnke->xVel = 0.75 * sin(pSnke->angle * (2 * PI/360));
-    pSnke->yCord += pSnke->yVel = -(0.75 * cos(pSnke->angle * (2 * PI/360)));
+  // Tracking previous position of snake's center point to render trail points later
+  float prev_xCord = pSnke->xCord + (pSnke->snkeRect.w / 2);
+  float prev_yCord = pSnke->yCord + (pSnke->snkeRect.h / 2);
 
-    if (pSnke->xCord < 0) {
-        pSnke->xCord = 0;
-    } else if (pSnke->xCord > pSnke->wind_Width - pSnke->snkeRect.w) {
-        pSnke->xCord = pSnke->wind_Width - pSnke->snkeRect.w;
-    }
+  // Update coordinates
+  pSnke->xCord += pSnke->xVel = 0.75 * sin(pSnke->angle * (2 * PI/360));
+  pSnke->yCord += pSnke->yVel = -(0.75 * cos(pSnke->angle * (2 * PI/360)));
 
-    if (pSnke->yCord < 0) {
-        pSnke->yCord = 0;
-    } else if (pSnke->yCord > pSnke->wind_Height - pSnke->snkeRect.h) {
-        pSnke->yCord = pSnke->wind_Height - pSnke->snkeRect.h;
-    }
 
-    // Set new cordinates
-    pSnke->snkeRect.x = pSnke->xCord;
-    pSnke->snkeRect.y = pSnke->yCord;
+  // Check if snake goes beyond left or right wall
+  if (pSnke->xCord < 0) {
+    pSnke->xCord = 0;
+  } else if (pSnke->xCord > pSnke->wind_Width - pSnke->snkeRect.w) {
+    pSnke->xCord = pSnke->wind_Width - pSnke->snkeRect.w;
+  }
+
+  // Check if snake goes beyond top or bottom wall
+  if (pSnke->yCord < 0) {
+    pSnke->yCord = 0;
+  } else if (pSnke->yCord > pSnke->wind_Height - pSnke->snkeRect.h) {
+    pSnke->yCord = pSnke->wind_Height - pSnke->snkeRect.h;
+  }
+
+  // Set new coordinates
+  pSnke->snkeRect.x = pSnke->xCord;
+  pSnke->snkeRect.y = pSnke->yCord;
+
+  // Add new trail points every frame
+  if (pSnke->trailLength < MAX_TRAIL_POINTS) {
+    pSnke->trailPoints[pSnke->trailLength].x = prev_xCord - pSnke->snkeRect.w / 2;
+    pSnke->trailPoints[pSnke->trailLength].y = prev_yCord - pSnke->snkeRect.h / 2;
+    pSnke->trailPoints[pSnke->trailLength].w = pSnke->snkeRect.w;
+    pSnke->trailPoints[pSnke->trailLength].h = pSnke->snkeRect.h;
+    pSnke->trailLength++;
+  }
 
 }
 
 void draw_snake(Snake *pSnke) {
-    SDL_RenderCopyEx(pSnke->pRenderer, pSnke->pTexture, NULL,
-        &(pSnke->snkeRect), pSnke->angle, NULL, SDL_FLIP_NONE);
+  SDL_RenderCopyEx(pSnke->pRenderer, pSnke->pTexture, NULL,
+    &(pSnke->snkeRect), pSnke->angle, NULL, SDL_FLIP_NONE);
+}
+
+void draw_trail(Snake *pSnke) {
+  SDL_SetRenderDrawColor(pSnke->pRenderer, 255, 0, 0, 255);
+
+  // Draws the rectangles that is the trail
+  for (int i = 0; i < pSnke->trailLength; i++) {
+    SDL_RenderFillRect(pSnke->pRenderer, &pSnke->trailPoints[i]);
+  }
 }
 
 void destroy_snake(Snake *pSnke){

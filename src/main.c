@@ -92,7 +92,6 @@ void input_handler(Game *pGame, SDL_Event *pEvent) {
       break;
     }
   }
-
 }
 
 void close(Game *pGame) {
@@ -103,12 +102,13 @@ void close(Game *pGame) {
 }
 
 void render_snake(Game *pGame) {
-  SDL_SetRenderDrawColor(pGame->pRenderer,0,0,0,255);
+  SDL_SetRenderDrawColor(pGame->pRenderer, 0, 0, 0, 255);
   SDL_RenderClear(pGame->pRenderer);
-  SDL_SetRenderDrawColor(pGame->pRenderer,230,230,230,255);
   draw_snake(pGame->pSnke);
+  draw_trail(pGame->pSnke);
   SDL_RenderPresent(pGame->pRenderer);
 }
+
 
 int error_forceExit(Game *pGame) {
   printf("Error: %s\n", SDL_GetError());
