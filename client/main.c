@@ -119,8 +119,8 @@ int init_structure(Game *pGame) {
     return 0;
   }
 
-  if (SDLNet_ResolveHost(&(pGame->serverAdd), "127.0.0.1", 2000)) {
-    printf("SDLNet_ResolveHost (127.0.0.1: 2000): %s\n", SDLNet_GetError());
+  if (SDLNet_ResolveHost(&(pGame->serverAdd), "192.168.56.1", 2000)) {
+    printf("SDLNet_ResolveHost (192.168.56.1: 2000): %s\n", SDLNet_GetError());
     return 0;
   }
 
