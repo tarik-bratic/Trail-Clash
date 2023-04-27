@@ -83,7 +83,7 @@ int init_structure(Game *pGame) {
     return 0;
   }
 
-  if (SDLNet_ResolveHost(&(pGame->serverAdd), "eduroam.kth.se", 2000)) {
+  if (SDLNet_ResolveHost(&(pGame->serverAdd), "130.229.133.140", 2000)) {
     printf("SDLNet_ResolveHost (127.0.0.1: 2000): %s\n", SDLNet_GetError());
     return 0;
   }
