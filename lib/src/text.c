@@ -37,6 +37,27 @@ Text *create_text(SDL_Renderer *pRenderer, int r, int g, int b, TTF_Font *pFont,
 
 }
 
+/** 
+*  Create a font from a file, using a specified point size.
+*  \param pFont Identifier of TTF_Font.
+*  \param file Path to font file.
+*  \param size_f Size of the font.
+*  The function also check for error.
+*  \returns Returns the font that was created or NULL on failure; TTF_GetError() for more information.
+*/
+TTF_Font *create_font(TTF_Font *pFont, char *file, int size_f) {
+
+    pFont = TTF_OpenFont(file, size_f);
+
+    if ( !pFont ) {
+      printf("Error (font): %s\n", TTF_GetError());
+      return 0;
+    }
+
+    return pFont;
+
+}
+
 /* Render a copy of the text to screen */
 void draw_text(Text *pText) {
     SDL_RenderCopy(pText->pRenderer, pText->pTexture, NULL, &pText->txtRect);
