@@ -26,7 +26,7 @@ typedef struct game {
 
   // UI
   TTF_Font *pNetFont;
-  Text *pStartText, *pWaitingText;
+  Text *pStartText, *pWaitingText, *pEnterIpAddrs;
 
   // NETWORK
   UDPsocket pSocket;
@@ -83,10 +83,13 @@ int init_structure(Game *pGame) {
   init_allSnakes(pGame);
 
   // Create own text with create_text function. Value is stored in a Text pointer.
-  pGame->pStartText = create_text(pGame->pRenderer, 238,168,65, pGame->pNetFont,
+  pGame->pStartText = create_text(pGame->pRenderer, 238, 168, 65, pGame->pNetFont,
     "[SPACE] to join", WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 + 100);
 
-  pGame->pWaitingText = create_text(pGame->pRenderer, 238,168,65,pGame->pNetFont,
+  pGame->pEnterIpAddrs = create_text(pGame->pRenderer, 255, 255, 255, pGame->pNetFont,
+    "Enter a server IP address", WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 + 100);
+
+  pGame->pWaitingText = create_text(pGame->pRenderer, 238, 168, 65,pGame->pNetFont,
     "Waiting for server...", WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 + 100);
 
   // Checking if there is an error regarding the Text pointer.
@@ -216,6 +219,7 @@ int init_allSnakes(Game *pGame) {
 
 /**
 *  Establish a client to server connection.
+*  Text prompt to enter IP address.
 *  \param pSocket Open a UDP network socket.
 *  \param pPacket Allocate/resize/free a single UDP packet.
 */
@@ -223,6 +227,8 @@ int init_conn(Game *pGame) {
 
   // Enable text input handling
   SDL_StartTextInput();
+
+  char mess[30] = "Enter a server IP address";
 
   char ipAddr[INPUT_BUFFER_SIZE] = "";
   int input_cursor_position = 0;
@@ -279,6 +285,13 @@ int init_conn(Game *pGame) {
       input_rect.h - 30         // Width of the rectangle
     };
 
+    SDL_Rect message = { 
+      input_rect.x = 250,        // Rectangle x cord
+      input_rect.y = 150,        // Rectangle y cord
+      input_rect.w = 300, // Height of the rectangle
+      input_rect.h = 100         // Width of the rectangle
+    };
+
     SDL_Color text_color = { 
       255, 
       255, 
@@ -287,8 +300,11 @@ int init_conn(Game *pGame) {
     };
 
     SDL_Surface* input_text_surface = TTF_RenderText_Solid(pGame->pNetFont, ipAddr, text_color);
+    SDL_Surface* message_surface = TTF_RenderText_Solid(pGame->pNetFont, mess, text_color);
     SDL_Texture* input_text_texture = SDL_CreateTextureFromSurface(pGame->pRenderer, input_text_surface);
+    SDL_Texture* message_texture = SDL_CreateTextureFromSurface(pGame->pRenderer, message_surface);
     SDL_RenderCopy(pGame->pRenderer, input_text_texture, NULL, &input_text_rect);
+    SDL_RenderCopy(pGame->pRenderer, message_texture, NULL, &message);
     SDL_RenderPresent(pGame->pRenderer);
 
   }
