@@ -178,6 +178,10 @@ void run(Game *pGame) {
           execute_command(pGame, cData);
         }
 
+        if (pGame->sData.connPlayers == 0) {
+          closeRequest = 1;
+        }
+
         // If exiting the program
         if (SDL_PollEvent(&event)) {
           if (event.type == SDL_QUIT) closeRequest = 1;
@@ -269,6 +273,8 @@ void execute_command(Game *pGame, ClientData cData) {
       case RIGHT:
         turn_right(pGame->pSnke[cData.snkeNumber]);
         break;
+      case DISC:
+        pGame->sData.connPlayers -= 1;
     }
 
 }

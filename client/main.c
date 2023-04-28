@@ -186,6 +186,13 @@ void run(Game *pGame) {
 
   }
 
+  cData.command = DISC;
+  memcpy(pGame->pPacket->data, &cData, sizeof(ClientData));
+	pGame->pPacket->len = sizeof(ClientData);
+  if ( !SDLNet_UDP_Send(pGame->pSocket, -1, pGame->pPacket) ) {
+    printf("Error (Send): %s", SDLNet_GetError());
+  }
+
 }
 
 /* 

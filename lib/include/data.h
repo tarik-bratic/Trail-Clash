@@ -9,7 +9,7 @@
 enum gameState { START, RUNNING };
 typedef enum gameState GameState;
 
-enum clientCommand { READY, LEFT, RIGHT };
+enum clientCommand { READY, LEFT, RIGHT, DISC };
 typedef enum clientCommand ClientCommand;
 
 struct clientData {
