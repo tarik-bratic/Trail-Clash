@@ -33,6 +33,7 @@ struct serverData {
     int snkeNum;
     SnakeData snakes[MAX_SNKES];
     GameState gState;
+    int connPlayers;
 
 };
 typedef struct serverData ServerData;

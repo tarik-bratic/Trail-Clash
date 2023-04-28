@@ -60,6 +60,7 @@ int main(int argv, char** args) {
 int init_structure(Game *pGame) {
 
   srand(time(NULL));
+  pGame->sData.connPlayers = MAX_SNKES;
 
   // Initialaze SDL library
   if (SDL_Init(SDL_INIT_VIDEO|SDL_INIT_TIMER) != 0) {
