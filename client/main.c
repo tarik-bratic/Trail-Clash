@@ -37,7 +37,7 @@ typedef struct game {
 
 } Game;
 
-int init_conn(Game *pGame, char *ip);
+int init_conn(Game *pGame);
 int init_structure(Game *pGame);
 int init_allSnakes(Game *pGame);
 
@@ -78,57 +78,7 @@ int init_structure(Game *pGame) {
   pGame->pNetFont = create_font(pGame->pNetFont, "../lib/resources/arial.ttf", 30);
   if ( !pGame->pNetFont );
 
-  SDL_StartTextInput(); // Enable text input handling
-
-  char input_buffer[INPUT_BUFFER_SIZE] = "";
-  int input_cursor_position = 0;
-
-    int running = 1;
-    while (running) {
-        SDL_Event event;
-        while (SDL_PollEvent(&event)) {
-            switch (event.type) {
-                case SDL_QUIT:
-                    running = 0;
-                    break;
-                case SDL_TEXTINPUT:
-                    if (input_cursor_position < INPUT_BUFFER_SIZE - 1) {
-                        strcat(input_buffer, event.text.text);
-                        input_cursor_position += strlen(event.text.text);
-                    }
-                    break;
-                case SDL_KEYDOWN:
-                    if (event.key.keysym.sym == SDLK_BACKSPACE && input_cursor_position > 0) {
-                        input_buffer[input_cursor_position - 1] = '\0';
-                        input_cursor_position--;
-                    }
-                    break;
-            }
-        }
-
-        // Clear the screen
-        SDL_SetRenderDrawColor(pGame->pRenderer, 0xFF, 0xFF, 0xFF, 0xFF);
-        SDL_RenderClear(pGame->pRenderer);
-
-        // Render the input field
-        SDL_Rect input_rect = { WINDOW_WIDTH / 2 - 100, WINDOW_HEIGHT / 2 - 25, 200, 50 };
-        SDL_SetRenderDrawColor(pGame->pRenderer, 0x00, 0x00, 0x00, 0xFF);
-        SDL_RenderDrawRect(pGame->pRenderer, &input_rect);
-        SDL_RenderDrawLine(pGame->pRenderer, input_rect.x + 10, input_rect.y + input_rect.h / 2, input_rect.x + input_rect.w - 10, input_rect.y + input_rect.h / 2);
-        SDL_Rect input_text_rect = { input_rect.x + 15, input_rect.y + 15, input_rect.w - 30, input_rect.h - 30 };
-        SDL_Color text_color = { 0x00, 0x00, 0x00, 0xFF };
-        SDL_Surface* input_text_surface = TTF_RenderText_Solid(pGame->pNetFont, input_buffer, text_color);
-        SDL_Texture* input_text_texture = SDL_CreateTextureFromSurface(pGame->pRenderer, input_text_surface);
-        SDL_RenderCopy(pGame->pRenderer, input_text_texture, NULL, &input_text_rect);
-
-        SDL_RenderPresent(pGame->pRenderer);
-    }
-
-    SDL_StopTextInput(); // Disable text input handling
-  
-  printf("Text: %s\n", input_buffer);
-
-  init_conn(pGame, input_buffer);
+  init_conn(pGame);
 
   init_allSnakes(pGame);
 
@@ -173,7 +123,10 @@ void run(Game *pGame) {
 
         // Looking if there is an input
         if (SDL_PollEvent(&event)) {
-          if (event.type == SDL_QUIT) closeRequest = 1;
+          if (event.type == SDL_QUIT) {
+            closeRequest = 1;
+            
+          }
           else input_handler(pGame, &event);
         }
 
@@ -259,7 +212,84 @@ int init_allSnakes(Game *pGame) {
 *  \param pSocket Open a UDP network socket.
 *  \param pPacket Allocate/resize/free a single UDP packet.
 */
-int init_conn(Game *pGame, char *ip) {
+int init_conn(Game *pGame) {
+
+  // Enable text input handling
+  SDL_StartTextInput();
+
+  char ipAddr[INPUT_BUFFER_SIZE] = "";
+  int input_cursor_position = 0;
+  int txt_width = 0;
+
+  int closeRequest = 1;
+  while (closeRequest) {
+    SDL_Event event;
+    while (SDL_PollEvent(&event)) {
+      switch (event.type) {
+        case SDL_QUIT:
+          closeRequest = 0;
+          break;
+        case SDL_TEXTINPUT:
+          if (input_cursor_position < 14) {
+            txt_width += 14;
+            strcat(ipAddr, event.text.text);
+            input_cursor_position += strlen(event.text.text);
+          }
+
+          break;
+        case SDL_KEYDOWN:
+          if (event.key.keysym.sym == SDLK_RETURN) closeRequest = 0;
+
+          if (event.key.keysym.sym == SDLK_BACKSPACE && input_cursor_position > 0) {
+            txt_width -= 14;
+            ipAddr[input_cursor_position - 1] = '\0';
+            input_cursor_position--;
+          }
+
+          break;
+      }
+    }
+
+    // Clear the screen
+    SDL_SetRenderDrawColor(pGame->pRenderer, 0, 0, 0, 255);
+    SDL_RenderClear(pGame->pRenderer);
+
+    // Render the input field
+    SDL_Rect input_rect = { 
+      WINDOW_WIDTH / 2 - 100, // Rectangle x cord
+      WINDOW_HEIGHT / 2 - 25, // Rectangle y cord
+      210,                    // Height of the rectangle
+      50                      // Width of the rectangle
+    };
+
+    SDL_SetRenderDrawColor(pGame->pRenderer, 255, 255, 255, 255);
+    SDL_RenderDrawRect(pGame->pRenderer, &input_rect);
+        
+    SDL_Rect input_text_rect = { 
+      input_rect.x + 15,        // Rectangle x cord
+      input_rect.y + 15,        // Rectangle y cord
+      input_rect.w = txt_width, // Height of the rectangle
+      input_rect.h - 30         // Width of the rectangle
+    };
+
+    SDL_Color text_color = { 
+      255, 
+      255, 
+      255, 
+      255 
+    };
+
+    SDL_Surface* input_text_surface = TTF_RenderText_Solid(pGame->pNetFont, ipAddr, text_color);
+    SDL_Texture* input_text_texture = SDL_CreateTextureFromSurface(pGame->pRenderer, input_text_surface);
+    SDL_RenderCopy(pGame->pRenderer, input_text_texture, NULL, &input_text_rect);
+    SDL_RenderPresent(pGame->pRenderer);
+
+  }
+
+  // Disable text input handling
+  SDL_StopTextInput();
+  SDL_SetRenderDrawColor(pGame->pRenderer, 0, 0, 0, 255);
+  SDL_RenderClear(pGame->pRenderer);
 
   // Establish client to server
   if ( !(pGame->pSocket = SDLNet_UDP_Open(0)) ) {
@@ -267,8 +297,8 @@ int init_conn(Game *pGame, char *ip) {
     return 0;
   }
 
-  if (SDLNet_ResolveHost(&(pGame->serverAdd), ip, 2000)) {
-    printf("SDLNet_ResolveHost (127.0.0.1: 2000): %s\n", SDLNet_GetError());
+  if (SDLNet_ResolveHost(&(pGame->serverAdd), ipAddr, 2000)) {
+    printf("SDLNet_ResolveHost (%s: 2000): %s\n", ipAddr, SDLNet_GetError());
     return 0;
   }
 
