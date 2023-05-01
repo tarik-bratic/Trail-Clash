@@ -20,7 +20,6 @@ typedef struct game {
   Snake *pSnke[MAX_SNKES];
   int num_of_snkes;
   int snkeID;
-  char *ipAddr;
 
   // UI
   TTF_Font *pStrdFont, *pTitleFont, *pNetFont;
@@ -74,17 +73,13 @@ int init_structure(Game *pGame) {
   if ( !pGame->pRenderer) close(pGame);
 
   pGame->pTitleFont = create_font(pGame->pTitleFont, "../lib/resources/chrustyrock.ttf", 100);
-  if ( !pGame->pTitleFont );
+  if ( !pGame->pTitleFont ) close(pGame);
 
   pGame->pStrdFont = create_font(pGame->pStrdFont, "../lib/resources/XBItalic.ttf", 20);
-  if ( !pGame->pStrdFont );
+  if ( !pGame->pStrdFont ) close(pGame);
 
-  pGame->pNetFont = create_font(pGame->pStrdFont, "../lib/resources/Sigmar-Regular.ttf", 20);
-  if ( !pGame->pStrdFont );
-
-  init_conn(pGame);
-
-  init_allSnakes(pGame);
+  pGame->pNetFont = create_font(pGame->pNetFont, "../lib/resources/Sigmar-Regular.ttf", 20);
+  if ( !pGame->pNetFont ) close(pGame);
 
   // Create own text with create_text function. Value is stored in a Text pointer.
   pGame->pTitleText = create_text(pGame->pRenderer, 70, 168, 65, pGame->pTitleFont,
@@ -93,25 +88,25 @@ int init_structure(Game *pGame) {
   pGame->pStartText = create_text(pGame->pRenderer, 70, 168, 65, pGame->pStrdFont,
     "[SPACE] to join", WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 + 50);
 
-  pGame->pEnterIpAddrs = create_text(pGame->pRenderer, 255, 255, 255, pGame->pStrdFont,
-    "Enter a server IP address", WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 + 100);
-
   pGame->pWaitingText = create_text(pGame->pRenderer, 238, 168, 65,pGame->pStrdFont,
     "Waiting for server ...", WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 + 100);
 
   // Checking if there is an error regarding the Text pointer.
-  if (!pGame->pStartText || !pGame->pWaitingText || !pGame->pEnterIpAddrs) {
+  if (!pGame->pStartText || !pGame->pWaitingText || !pGame->pTitleText) {
     printf("Error: %s\n", SDL_GetError());
     close(pGame);
     return 0;
   }
 
+  init_allSnakes(pGame);
+
+  init_conn(pGame);
+
   return 1;
 
 }
 
-/* Main loop of the game. Updates the snakes attributes. Looking for input.
-Sends and recives new data. */
+/* Main loop of the game. Updates the snakes attributes. Looking for input. Sends and recives new data. */
 void run(Game *pGame) {
 
   SDL_Event event;
@@ -122,10 +117,8 @@ void run(Game *pGame) {
   while(!closeRequest) {
 
     switch (pGame->state) {
-
       // The game is running
       case RUNNING:
-
         // Update new recived data
         while(SDLNet_UDP_Recv(pGame->pSocket, pGame->pPacket)) {
           update_server_data(pGame);
@@ -135,23 +128,19 @@ void run(Game *pGame) {
         if (SDL_PollEvent(&event)) {
           if (event.type == SDL_QUIT) {
             closeRequest = 1;
-            
           }
           else input_handler(pGame, &event);
         }
 
-        // Update snake cord and bullet cord
+        // Update snake cord, send data
         for(int i = 0; i < MAX_SNKES; i++)
           update_snake(pGame->pSnke[i]);
         
         // Render snake to the window
-        render_snake(pGame);
-        
+        render_snake(pGame);  
       break;
-
-      // Lobby (waiting to start)
+      // Main Menu
       case START:
-
         // If you haven't joined display start text if not display waiting text
         if (!joining) {
           draw_text(pGame->pTitleText);
@@ -168,10 +157,10 @@ void run(Game *pGame) {
 
         // Looking if player has pressed spacebar
         if (SDL_PollEvent(&event)) {
-          if (event.type == SDL_QUIT) {
-            closeRequest = 1;
-          } else if (!joining && event.type == SDL_KEYDOWN && event.key.keysym.scancode == SDL_SCANCODE_SPACE) {
-              // Change client data and copy to packet
+          if (event.type == SDL_QUIT) closeRequest = 1;
+          
+          if (!joining && event.type == SDL_KEYDOWN && event.key.keysym.scancode == SDL_SCANCODE_SPACE) {
+              // Change client data and copy to packet (Space is pressed)
               joining = 1;
               cData.command = READY;
               cData.snkeNumber = -1;
@@ -181,15 +170,18 @@ void run(Game *pGame) {
         }
 
         // Send client data packet
-        if (joining) SDLNet_UDP_Send(pGame->pSocket, -1, pGame->pPacket);
+        if (joining) {
+          if ( !SDLNet_UDP_Send(pGame->pSocket, -1, pGame->pPacket) ) {
+            printf("Error (UDP_Send): %s", SDLNet_GetError());
+          }
+        }
 
         // Update new recived data
         if (SDLNet_UDP_Recv(pGame->pSocket, pGame->pPacket)) {
           update_server_data(pGame);
           if (pGame->state == RUNNING) joining = 0;
         }
-
-        break;
+      break;
 
     }
 
@@ -197,30 +189,43 @@ void run(Game *pGame) {
 
   }
 
+  // When player has closed window or left the game
   cData.command = DISC;
   memcpy(pGame->pPacket->data, &cData, sizeof(ClientData));
 	pGame->pPacket->len = sizeof(ClientData);
+
   if ( !SDLNet_UDP_Send(pGame->pSocket, -1, pGame->pPacket) ) {
-    printf("Error (Send): %s", SDLNet_GetError());
+    printf("Error (UDP_Send): %s", SDLNet_GetError());
   }
 
 }
 
-/* 
-*  Create all snakes (players) in an array.
-*  Checking for errors.
-*/
-int init_allSnakes(Game *pGame) {
+/* Manage various inputs (keypress, mouse) */
+void input_handler(Game *pGame, SDL_Event *pEvent) {
 
-  for(int i = 0; i < MAX_SNKES; i++)
-    pGame->pSnke[i] = create_snake(i, pGame->pRenderer, WINDOW_WIDTH, WINDOW_HEIGHT);
+  if (pEvent->type == SDL_KEYDOWN) {
 
-  for(int i = 0; i < MAX_SNKES; i++) {
-    if(!pGame->pSnke[i]) {
-      printf("Error: %s", SDL_GetError());
-      close(pGame);
-      return 0;
+    ClientData cData;
+    cData.snkeNumber = pGame->snkeID;
+
+    switch (pEvent->key.keysym.scancode) {
+      case SDL_SCANCODE_A:
+      case SDL_SCANCODE_LEFT:
+        turn_left(pGame->pSnke[pGame->snkeID]);
+        cData.command = LEFT;
+        break;
+      case SDL_SCANCODE_D:
+      case SDL_SCANCODE_RIGHT:
+        turn_right(pGame->pSnke[pGame->snkeID]);
+        cData.command = RIGHT;
+      break;
     }
+
+    // Send data
+    memcpy(pGame->pPacket->data, &cData, sizeof(ClientData));
+    pGame->pPacket->len = sizeof(ClientData);
+    SDLNet_UDP_Send(pGame->pSocket, -1, pGame->pPacket);
+
   }
 
 }
@@ -237,10 +242,8 @@ int init_conn(Game *pGame) {
   SDL_StartTextInput();
 
   char mess[30] = "Enter a server IP address";
-
   char ipAddr[INPUT_BUFFER_SIZE] = "";
   int input_cursor_position = 0;
-  int txt_width = 0;
 
   int closeRequest = 1;
   while (closeRequest) {
@@ -249,25 +252,20 @@ int init_conn(Game *pGame) {
       switch (event.type) {
         case SDL_QUIT:
           closeRequest = 0;
-          break;
+        break;
         case SDL_TEXTINPUT:
           if (input_cursor_position < 14) {
-            txt_width += 14;
             strcat(ipAddr, event.text.text);
             input_cursor_position += strlen(event.text.text);
           }
-
-          break;
+        break;
         case SDL_KEYDOWN:
           if (event.key.keysym.sym == SDLK_RETURN) closeRequest = 0;
-
           if (event.key.keysym.sym == SDLK_BACKSPACE && input_cursor_position > 0) {
-            txt_width -= 14;
             ipAddr[input_cursor_position - 1] = '\0';
             input_cursor_position--;
           }
-
-          break;
+        break;
       }
     }
 
@@ -321,7 +319,7 @@ int init_conn(Game *pGame) {
 
   }
 
-  // Disable text input handling
+  // Disable text input handling, clear screen
   SDL_StopTextInput();
   SDL_SetRenderDrawColor(pGame->pRenderer, 0, 0, 0, 255);
   SDL_RenderClear(pGame->pRenderer);
@@ -349,32 +347,35 @@ int init_conn(Game *pGame) {
 
 }
 
-/* Manage various inputs (keypress, mouse) */
-void input_handler(Game *pGame, SDL_Event *pEvent) {
+/* Copy new data to server data and updates snake data */
+void update_server_data(Game *pGame) {
 
-  if (pEvent->type == SDL_KEYDOWN) {
+    ServerData srvData;
 
-    ClientData cData;
-    cData.snkeNumber = pGame->snkeID;
+    memcpy(&srvData, pGame->pPacket->data, sizeof(ServerData));
+    pGame->snkeID = srvData.snkeNum;
+    pGame->state = srvData.gState;
 
-    switch(pEvent->key.keysym.scancode){
-      case SDL_SCANCODE_A:
-      case SDL_SCANCODE_LEFT:
-        turn_left(pGame->pSnke[pGame->snkeID]);
-        cData.command = LEFT;
-        break;
-      case SDL_SCANCODE_D:
-      case SDL_SCANCODE_RIGHT:
-        turn_right(pGame->pSnke[pGame->snkeID]);
-        cData.command = RIGHT;
-      break;
+    for (int i = 0; i < MAX_SNKES; i++)
+      update_recived_snake_data(pGame->pSnke[i], &(srvData.snakes[i]));
+
+}
+
+/* 
+*  Create all snakes (players) in an array.
+*  Checking for errors.
+*/
+int init_allSnakes(Game *pGame) {
+
+  for (int i = 0; i < MAX_SNKES; i++)
+    pGame->pSnke[i] = create_snake(i, pGame->pRenderer, WINDOW_WIDTH, WINDOW_HEIGHT);
+
+  for (int i = 0; i < MAX_SNKES; i++) {
+    if (!pGame->pSnke[i]) {
+      printf("Error: %s", SDL_GetError());
+      close(pGame);
+      return 0;
     }
-
-    // Send data
-    memcpy(pGame->pPacket->data, &cData, sizeof(ClientData));
-    pGame->pPacket->len = sizeof(ClientData);
-    SDLNet_UDP_Send(pGame->pSocket, -1, pGame->pPacket);
-
   }
 
 }
@@ -386,7 +387,7 @@ void render_snake(Game *pGame) {
   SDL_RenderClear(pGame->pRenderer);
   SDL_SetRenderDrawColor(pGame->pRenderer,230,230,230,255);
 
-  for(int i = 0; i < MAX_SNKES; i++) {
+  for (int i = 0; i < MAX_SNKES; i++) {
     draw_snake(pGame->pSnke[i]);
     draw_trail(pGame->pSnke[i]);
   }
@@ -395,25 +396,11 @@ void render_snake(Game *pGame) {
 
 }
 
-/* Copy new data to server data and updates snake data */
-void update_server_data(Game *pGame) {
-
-    ServerData srvData;
-
-    memcpy(&srvData, pGame->pPacket->data, sizeof(ServerData));
-    pGame->snkeID = srvData.snkeNum;
-    pGame->state = srvData.gState;
-
-    for(int i=0; i < MAX_SNKES; i++)
-      update_recived_snake_data(pGame->pSnke[i], &(srvData.snakes[i]));
-
-}
-
 /* Destoryes various SDL libraries and snakes. Safe way when exiting game. */
 void close(Game *pGame) {
 
-  for(int i=0; i < MAX_SNKES; i++) 
-    if(pGame->pSnke[i]) destroy_snake(pGame->pSnke[i]);
+  for (int i = 0; i < MAX_SNKES; i++) 
+    if (pGame->pSnke[i]) destroy_snake(pGame->pSnke[i]);
 
   if (pGame->pRenderer) SDL_DestroyRenderer(pGame->pRenderer);
 

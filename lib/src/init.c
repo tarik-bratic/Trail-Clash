@@ -1,11 +1,7 @@
-#include <time.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
 #include <SDL2/SDL_net.h>
-#include <SDL2/SDL_timer.h>
-#include <SDL2/SDL_image.h>
 #include "../include/data.h"
 #include "../include/init.h"
 
