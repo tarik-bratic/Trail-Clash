@@ -312,7 +312,7 @@ void render_snake(Game *pGame) {
 
   for(int i = 0; i < MAX_SNKES; i++) {
     draw_snake(pGame->pSnke[i]);
-    //draw_trail(pGame->pSnke[i]);
+    draw_trail(pGame->pSnke[i]);
   }
 
   SDL_RenderPresent(pGame->pRenderer);

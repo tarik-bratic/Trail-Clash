@@ -39,9 +39,11 @@ Snake *create_snake(int number, SDL_Renderer *pRenderer, int wind_Width, int win
     SDL_QueryTexture(pSnke->pTexture, NULL, NULL, 
       &(pSnke->snkeRect.w), &(pSnke->snkeRect.h));
 
+    // Set width and height of object
+    pSnke->snkeRect.w /= 24;
+    pSnke->snkeRect.h /= 24;
+
     // Set start position on the center
-    pSnke->snkeRect.w /= 8;
-    pSnke->snkeRect.h /= 8;
     pSnke->xSrt = pSnke->xCord = pSnke->snkeRect.x = 
         wind_Width * (number+1) / 6 - pSnke->snkeRect.w / 2;
     pSnke->ySrt = pSnke->yCord = pSnke->snkeRect.y = 
@@ -69,20 +71,18 @@ void turn_right(Snake *pSnke) {
     pSnke->angle += 5.0;
 }
 
+/* Return true if there is a collision, false there is not collision */
 int check_collision(Snake *pSnke) {
   for (int i = 0; i < pSnke->trailLength; i++) {
     SDL_Rect *trailRect = &pSnke->trailPoints[i];
-    if (SDL_HasIntersection(&(pSnke->snkeRect), trailRect)) {
-      return 1; // Return true if there is a collision
-    }
+    if (SDL_HasIntersection(&(pSnke->snkeRect), trailRect)) return 1;
   }
-  return 0; // Return false if there is no collision
+  return 0;
 }
 
+/* The snake has collided */
 void check_and_handle_collision(Snake *pSnke) {
-  if (check_collision(pSnke)) {
-    pSnke->snakeCollided = 1;
-  }
+  if (check_collision(pSnke)) pSnke->snakeCollided = 1;
 }
 
 /* Update and set new cords and look if player is not outside of the screen */
@@ -90,6 +90,7 @@ void update_snake(Snake *pSnke) {
 
     // If snake has not collided it runs the code below
     if (!pSnke->snakeCollided) {
+
         // Tracking previous position of snake's center point to render trail points later
         float prev_xCord = pSnke->xCord + (pSnke->snkeRect.w / 2);
         float prev_yCord = pSnke->yCord + (pSnke->snkeRect.h / 2);
@@ -101,12 +102,14 @@ void update_snake(Snake *pSnke) {
         // Check for collision
         check_and_handle_collision(pSnke);
 
+        // Check if snake goes beyond left or right wall
         if (pSnke->xCord < 0) {
             pSnke->xCord = 0;
         } else if (pSnke->xCord > pSnke->wind_Width - pSnke->snkeRect.w) {
             pSnke->xCord = pSnke->wind_Width - pSnke->snkeRect.w;
         }
 
+        // Check if snake goes beyond top or bottom wall
         if (pSnke->yCord < 0) {
             pSnke->yCord = 0;
         } else if (pSnke->yCord > pSnke->wind_Height - pSnke->snkeRect.h) {
@@ -169,6 +172,9 @@ void update_snakeData(Snake *pSnke, SnakeData *pSnkeData) {
     pSnkeData->yVel = pSnke->yVel;
     pSnkeData->xCord = pSnke->xCord;
     pSnkeData->yCord = pSnke->yCord;
+    pSnkeData->snakeCollided = pSnke->snakeCollided;
+    pSnkeData->trailCounter = pSnke->trailCounter;
+    pSnkeData->trailLength = pSnke->trailLength;
 }
 
 /* Update snake data to snake (angle, cord, vel)*/
@@ -179,4 +185,7 @@ void update_recived_snake_data(Snake *pSnke, SnakeData *pSnkeData) {
     pSnke->yVel = pSnkeData->yVel;
     pSnke->xCord = pSnkeData->xCord;
     pSnke->yCord = pSnkeData->yCord;
+    pSnke->snakeCollided = pSnkeData->snakeCollided;
+    pSnke->trailCounter = pSnkeData->trailCounter;
+    pSnke->trailLength = pSnkeData->trailLength;
 }
