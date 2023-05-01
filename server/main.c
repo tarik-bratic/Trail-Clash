@@ -305,10 +305,16 @@ void close(Game *pGame) {
 
 /* Render a snake to the window */
 void render_snake(Game *pGame) {
+
   SDL_SetRenderDrawColor(pGame->pRenderer,0,0,0,255);
   SDL_RenderClear(pGame->pRenderer);
   SDL_SetRenderDrawColor(pGame->pRenderer,230,230,230,255);
-  for(int i = 0; i < MAX_SNKES; i++)
+
+  for(int i = 0; i < MAX_SNKES; i++) {
     draw_snake(pGame->pSnke[i]);
+    //draw_trail(pGame->pSnke[i]);
+  }
+
   SDL_RenderPresent(pGame->pRenderer);
+
 }

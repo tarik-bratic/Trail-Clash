@@ -275,6 +275,13 @@ int init_conn(Game *pGame) {
       50                      // Width of the rectangle
     };
 
+    SDL_Rect text_rect = { 
+      WINDOW_WIDTH / 2 - 100, // Rectangle x cord
+      WINDOW_HEIGHT / 2 - 25, // Rectangle y cord
+      210,                    // Height of the rectangle
+      50                      // Width of the rectangle
+    };
+
     SDL_SetRenderDrawColor(pGame->pRenderer, 255, 255, 255, 255);
     SDL_RenderDrawRect(pGame->pRenderer, &input_rect);
         
@@ -286,10 +293,10 @@ int init_conn(Game *pGame) {
     };
 
     SDL_Rect message = { 
-      input_rect.x = 250,        // Rectangle x cord
-      input_rect.y = 150,        // Rectangle y cord
-      input_rect.w = 300, // Height of the rectangle
-      input_rect.h = 100         // Width of the rectangle
+      text_rect.x = 250,        // Rectangle x cord
+      text_rect.y = 150,        // Rectangle y cord
+      text_rect.w = 300, // Height of the rectangle
+      text_rect.h = 100         // Width of the rectangle
     };
 
     SDL_Color text_color = { 
@@ -374,9 +381,11 @@ void render_snake(Game *pGame) {
   SDL_RenderClear(pGame->pRenderer);
   SDL_SetRenderDrawColor(pGame->pRenderer,230,230,230,255);
 
-  for(int i = 0; i < MAX_SNKES; i++)
+  for(int i = 0; i < MAX_SNKES; i++) {
     draw_snake(pGame->pSnke[i]);
-  
+    //draw_trail(pGame->pSnke[i]);
+  }
+
   SDL_RenderPresent(pGame->pRenderer);
 
 }

@@ -4,8 +4,6 @@
 #include "../include/data.h"
 #include "../include/snake.h"
 
-#define PI 3.14
-
 /* Function to create a snake with attributes with default values */
 Snake *create_snake(int number, SDL_Renderer *pRenderer, int wind_Width, int wind_Height) {
 
@@ -15,11 +13,13 @@ Snake *create_snake(int number, SDL_Renderer *pRenderer, int wind_Width, int win
     pSnke->xVel = 0;
     pSnke->yVel = 0;
     pSnke->angle = 0;
+    pSnke->trailLength = 0;
+    pSnke->trailCounter = 0;
     pSnke->wind_Width = wind_Width;
     pSnke->wind_Height = wind_Height;
 
     // Load image
-    SDL_Surface *pSurface = IMG_Load("../lib/resources/snake.png");
+    SDL_Surface *pSurface = IMG_Load("../lib/resources/square.png");
     if (!pSurface) {
         printf("Error: %s\n", SDL_GetError());
         return NULL;
@@ -69,28 +69,65 @@ void turn_right(Snake *pSnke) {
     pSnke->angle += 5.0;
 }
 
+int check_collision(Snake *pSnke) {
+  for (int i = 0; i < pSnke->trailLength; i++) {
+    SDL_Rect *trailRect = &pSnke->trailPoints[i];
+    if (SDL_HasIntersection(&(pSnke->snkeRect), trailRect)) {
+      return 1; // Return true if there is a collision
+    }
+  }
+  return 0; // Return false if there is no collision
+}
+
+void check_and_handle_collision(Snake *pSnke) {
+  if (check_collision(pSnke)) {
+    pSnke->snakeCollided = 1;
+  }
+}
+
 /* Update and set new cords and look if player is not outside of the screen */
 void update_snake(Snake *pSnke) {
 
-    // Update coardinates
-    pSnke->xCord += pSnke->xVel = 0.75 * sin(pSnke->angle * (2 * PI/360));
-    pSnke->yCord += pSnke->yVel = -(0.75 * cos(pSnke->angle * (2 * PI/360)));
+    // If snake has not collided it runs the code below
+    if (!pSnke->snakeCollided) {
+        // Tracking previous position of snake's center point to render trail points later
+        float prev_xCord = pSnke->xCord + (pSnke->snkeRect.w / 2);
+        float prev_yCord = pSnke->yCord + (pSnke->snkeRect.h / 2);
 
-    if (pSnke->xCord < 0) {
-        pSnke->xCord = 0;
-    } else if (pSnke->xCord > pSnke->wind_Width - pSnke->snkeRect.w) {
-        pSnke->xCord = pSnke->wind_Width - pSnke->snkeRect.w;
+        // Update coardinates
+        pSnke->xCord += pSnke->xVel = 0.75 * sin(pSnke->angle * (2 * PI/360));
+        pSnke->yCord += pSnke->yVel = -(0.75 * cos(pSnke->angle * (2 * PI/360)));
+
+        // Check for collision
+        check_and_handle_collision(pSnke);
+
+        if (pSnke->xCord < 0) {
+            pSnke->xCord = 0;
+        } else if (pSnke->xCord > pSnke->wind_Width - pSnke->snkeRect.w) {
+            pSnke->xCord = pSnke->wind_Width - pSnke->snkeRect.w;
+        }
+
+        if (pSnke->yCord < 0) {
+            pSnke->yCord = 0;
+        } else if (pSnke->yCord > pSnke->wind_Height - pSnke->snkeRect.h) {
+            pSnke->yCord = pSnke->wind_Height - pSnke->snkeRect.h;
+        }
+
+        // Set new cordinates
+        pSnke->snkeRect.x = pSnke->xCord;
+        pSnke->snkeRect.y = pSnke->yCord;
+
+        // Add new trail points every frame with a small offset based on the snake's velocity
+        if (pSnke->trailLength < MAX_TRAIL_POINTS) {
+          float offset = 32; // Changes distance between snake and trail
+          pSnke->trailPoints[pSnke->trailLength].x = prev_xCord - pSnke->snkeRect.w / 2 - pSnke->xVel * offset;
+          pSnke->trailPoints[pSnke->trailLength].y = prev_yCord - pSnke->snkeRect.h / 2 - pSnke->yVel * offset;
+          pSnke->trailPoints[pSnke->trailLength].w = pSnke->snkeRect.w;
+          pSnke->trailPoints[pSnke->trailLength].h = pSnke->snkeRect.h;
+          pSnke->trailLength++;
+        }
+
     }
-
-    if (pSnke->yCord < 0) {
-        pSnke->yCord = 0;
-    } else if (pSnke->yCord > pSnke->wind_Height - pSnke->snkeRect.h) {
-        pSnke->yCord = pSnke->wind_Height - pSnke->snkeRect.h;
-    }
-
-    // Set new cordinates
-    pSnke->snkeRect.x = pSnke->xCord;
-    pSnke->snkeRect.y = pSnke->yCord;
 
 }
 
@@ -107,6 +144,15 @@ void reset_snake(Snake *pSnke) {
 void draw_snake(Snake *pSnke) {
     SDL_RenderCopyEx(pSnke->pRenderer, pSnke->pTexture, NULL,
         &(pSnke->snkeRect), pSnke->angle, NULL, SDL_FLIP_NONE);
+}
+
+void draw_trail(Snake *pSnke) {
+  SDL_SetRenderDrawColor(pSnke->pRenderer, 255, 0, 0, 255);
+
+  // Draws the rectangles that is the trail
+  for (int i = 0; i < pSnke->trailLength; i++) {
+    SDL_RenderFillRect(pSnke->pRenderer, &pSnke->trailPoints[i]);
+  }
 }
 
 /* Destory snake texture and free */

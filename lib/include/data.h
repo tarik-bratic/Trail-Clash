@@ -2,9 +2,11 @@
 #define data_h
 
 #define MAX_SNKES 1
+#define MAX_TRAIL_LENGTH 100
 #define WINDOW_WIDTH 900
 #define WINDOW_HEIGHT 560
 #define ONE_MS 1000/60-15
+#define PI 3.14
 
 enum gameState { START, RUNNING };
 typedef enum gameState GameState;
@@ -38,6 +40,8 @@ struct serverData {
 };
 typedef struct serverData ServerData;
 
+
+#define MAX_TRAIL_POINTS 100000000
 /* Snake stuct (cords, vel, angle, render, texture, rect, bullet) */
 struct snake {
 
@@ -47,6 +51,12 @@ struct snake {
   double angle, alive;
 
   int wind_Width, wind_Height;
+
+  // Trail
+  int trailLength;
+  int trailCounter;
+  int snakeCollided;
+  SDL_Rect trailPoints[MAX_TRAIL_POINTS];
 
   SDL_Renderer *pRenderer;
   SDL_Texture *pTexture;
