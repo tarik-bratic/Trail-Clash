@@ -13,6 +13,7 @@ struct snake {
   int wind_Width, wind_Height;
   int trailLength;
   int trailCounter;
+  int snakeCollided;
   SDL_Renderer *pRenderer;
   SDL_Texture *pTexture;
   SDL_Rect snkeRect;
@@ -80,45 +81,65 @@ void turn_right(Snake *pSnke) {
     pSnke->angle += 5.0;
 }
 
+int check_collision(Snake *pSnke) {
+  for (int i = 0; i < pSnke->trailLength; i++) {
+    SDL_Rect *trailRect = &pSnke->trailPoints[i];
+    if (SDL_HasIntersection(&(pSnke->snkeRect), trailRect)) {
+      return 1; // Return true if there is a collision
+    }
+  }
+  return 0; // Return false if there is no collision
+}
+
+void check_and_handle_collision(Snake *pSnke) {
+  if (check_collision(pSnke)) {
+    pSnke->snakeCollided = 1;
+  }
+}
 
 void update_snake(Snake *pSnke) {
+  
+  // If snake has not collided it runs the code below
+  if (!pSnke->snakeCollided) {
+    // Tracking previous position of snake's center point to render trail points later
+    float prev_xCord = pSnke->xCord + (pSnke->snkeRect.w / 2);
+    float prev_yCord = pSnke->yCord + (pSnke->snkeRect.h / 2);
 
-  // Tracking previous position of snake's center point to render trail points later
-  float prev_xCord = pSnke->xCord + (pSnke->snkeRect.w / 2);
-  float prev_yCord = pSnke->yCord + (pSnke->snkeRect.h / 2);
+    // Update coordinates
+    pSnke->xCord += pSnke->xVel = 0.75 * sin(pSnke->angle * (2 * PI/360));
+    pSnke->yCord += pSnke->yVel = -(0.75 * cos(pSnke->angle * (2 * PI/360)));
+  
+    // Check for collision
+    check_and_handle_collision(pSnke);
 
-  // Update coordinates
-  pSnke->xCord += pSnke->xVel = 0.75 * sin(pSnke->angle * (2 * PI/360));
-  pSnke->yCord += pSnke->yVel = -(0.75 * cos(pSnke->angle * (2 * PI/360)));
+    // Check if snake goes beyond left or right wall
+    if (pSnke->xCord < 0) {
+      pSnke->xCord = 0;
+    } else if (pSnke->xCord > pSnke->wind_Width - pSnke->snkeRect.w) {
+      pSnke->xCord = pSnke->wind_Width - pSnke->snkeRect.w;
+    }
 
+    // Check if snake goes beyond top or bottom wall
+    if (pSnke->yCord < 0) {
+      pSnke->yCord = 0;
+    } else if (pSnke->yCord > pSnke->wind_Height - pSnke->snkeRect.h) {
+      pSnke->yCord = pSnke->wind_Height - pSnke->snkeRect.h;
+    }
 
-  // Check if snake goes beyond left or right wall
-  if (pSnke->xCord < 0) {
-    pSnke->xCord = 0;
-  } else if (pSnke->xCord > pSnke->wind_Width - pSnke->snkeRect.w) {
-    pSnke->xCord = pSnke->wind_Width - pSnke->snkeRect.w;
+    // Set new coordinates
+    pSnke->snkeRect.x = pSnke->xCord;
+    pSnke->snkeRect.y = pSnke->yCord;
+  
+    // Add new trail points every frame with a small offset based on the snake's velocity
+    if (pSnke->trailLength < MAX_TRAIL_POINTS) {
+      float offset = 32; // Changes distance between snake and trail
+      pSnke->trailPoints[pSnke->trailLength].x = prev_xCord - pSnke->snkeRect.w / 2 - pSnke->xVel * offset;
+      pSnke->trailPoints[pSnke->trailLength].y = prev_yCord - pSnke->snkeRect.h / 2 - pSnke->yVel * offset;
+      pSnke->trailPoints[pSnke->trailLength].w = pSnke->snkeRect.w;
+      pSnke->trailPoints[pSnke->trailLength].h = pSnke->snkeRect.h;
+      pSnke->trailLength++;
+    }
   }
-
-  // Check if snake goes beyond top or bottom wall
-  if (pSnke->yCord < 0) {
-    pSnke->yCord = 0;
-  } else if (pSnke->yCord > pSnke->wind_Height - pSnke->snkeRect.h) {
-    pSnke->yCord = pSnke->wind_Height - pSnke->snkeRect.h;
-  }
-
-  // Set new coordinates
-  pSnke->snkeRect.x = pSnke->xCord;
-  pSnke->snkeRect.y = pSnke->yCord;
-
-  // Add new trail points every frame
-  if (pSnke->trailLength < MAX_TRAIL_POINTS) {
-    pSnke->trailPoints[pSnke->trailLength].x = prev_xCord - pSnke->snkeRect.w / 2;
-    pSnke->trailPoints[pSnke->trailLength].y = prev_yCord - pSnke->snkeRect.h / 2;
-    pSnke->trailPoints[pSnke->trailLength].w = pSnke->snkeRect.w;
-    pSnke->trailPoints[pSnke->trailLength].h = pSnke->snkeRect.h;
-    pSnke->trailLength++;
-  }
-
 }
 
 void draw_snake(Snake *pSnke) {
