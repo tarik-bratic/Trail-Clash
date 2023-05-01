@@ -1,13 +1,14 @@
 #ifndef data_h
 #define data_h
 
+#define PI 3.14
 #define MAX_SNKES 2
-#define MAX_TRAIL_LENGTH 100
-#define MAX_TRAIL_POINTS 100000000
 #define WINDOW_WIDTH 900
 #define WINDOW_HEIGHT 560
 #define ONE_MS 1000/60-15
-#define PI 3.14
+#define MAX_TRAIL_LENGTH 100
+#define INPUT_BUFFER_SIZE 128
+#define MAX_TRAIL_POINTS 100000000
 
 enum gameState { START, RUNNING };
 typedef enum gameState GameState;
@@ -44,7 +45,7 @@ struct serverData {
 };
 typedef struct serverData ServerData;
 
-/* Snake stuct (cords, vel, angle, render, texture, rect, bullet) */
+/* Snake stuct  */
 struct snake {
 
   float xCord, yCord;
@@ -54,7 +55,6 @@ struct snake {
 
   int wind_Width, wind_Height;
 
-  // Trail
   int trailLength;
   int trailCounter;
   int snakeCollided;

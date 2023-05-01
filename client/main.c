@@ -11,8 +11,6 @@
 #include "../lib/include/snake.h"
 #include "../lib/include/init.h"
 
-#define INPUT_BUFFER_SIZE 128
-
 /* Client Game struct (Snake, UI, Network) */
 typedef struct game {
 
@@ -25,8 +23,8 @@ typedef struct game {
   char *ipAddr;
 
   // UI
-  TTF_Font *pNetFont;
-  Text *pStartText, *pWaitingText, *pEnterIpAddrs;
+  TTF_Font *pStrdFont, *pTitleFont, *pNetFont;
+  Text *pTitleText, *pStartText, *pWaitingText, *pEnterIpAddrs;
 
   // NETWORK
   UDPsocket pSocket;
@@ -75,25 +73,34 @@ int init_structure(Game *pGame) {
   pGame->pRenderer = create_render(pGame->pRenderer, pGame->pWindow);
   if ( !pGame->pRenderer) close(pGame);
 
-  pGame->pNetFont = create_font(pGame->pNetFont, "../lib/resources/arial.ttf", 30);
-  if ( !pGame->pNetFont );
+  pGame->pTitleFont = create_font(pGame->pTitleFont, "../lib/resources/chrustyrock.ttf", 100);
+  if ( !pGame->pTitleFont );
+
+  pGame->pStrdFont = create_font(pGame->pStrdFont, "../lib/resources/XBItalic.ttf", 20);
+  if ( !pGame->pStrdFont );
+
+  pGame->pNetFont = create_font(pGame->pStrdFont, "../lib/resources/Sigmar-Regular.ttf", 20);
+  if ( !pGame->pStrdFont );
 
   init_conn(pGame);
 
   init_allSnakes(pGame);
 
   // Create own text with create_text function. Value is stored in a Text pointer.
-  pGame->pStartText = create_text(pGame->pRenderer, 238, 168, 65, pGame->pNetFont,
-    "[SPACE] to join", WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 + 100);
+  pGame->pTitleText = create_text(pGame->pRenderer, 70, 168, 65, pGame->pTitleFont,
+    "Trail Clash", WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2);
 
-  pGame->pEnterIpAddrs = create_text(pGame->pRenderer, 255, 255, 255, pGame->pNetFont,
+  pGame->pStartText = create_text(pGame->pRenderer, 70, 168, 65, pGame->pStrdFont,
+    "[SPACE] to join", WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 + 50);
+
+  pGame->pEnterIpAddrs = create_text(pGame->pRenderer, 255, 255, 255, pGame->pStrdFont,
     "Enter a server IP address", WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 + 100);
 
-  pGame->pWaitingText = create_text(pGame->pRenderer, 238, 168, 65,pGame->pNetFont,
-    "Waiting for server...", WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 + 100);
+  pGame->pWaitingText = create_text(pGame->pRenderer, 238, 168, 65,pGame->pStrdFont,
+    "Waiting for server ...", WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 + 100);
 
   // Checking if there is an error regarding the Text pointer.
-  if (!pGame->pStartText || !pGame->pWaitingText) {
+  if (!pGame->pStartText || !pGame->pWaitingText || !pGame->pEnterIpAddrs) {
     printf("Error: %s\n", SDL_GetError());
     close(pGame);
     return 0;
@@ -147,6 +154,7 @@ void run(Game *pGame) {
 
         // If you haven't joined display start text if not display waiting text
         if (!joining) {
+          draw_text(pGame->pTitleText);
           draw_text(pGame->pStartText);
         } else {
           SDL_SetRenderDrawColor(pGame->pRenderer,0,0,0,255);
@@ -271,14 +279,14 @@ int init_conn(Game *pGame) {
     SDL_Rect input_rect = { 
       WINDOW_WIDTH / 2 - 100, // Rectangle x cord
       WINDOW_HEIGHT / 2 - 25, // Rectangle y cord
-      210,                    // Height of the rectangle
+      200,                    // Height of the rectangle
       50                      // Width of the rectangle
     };
 
     SDL_Rect text_rect = { 
       WINDOW_WIDTH / 2 - 100, // Rectangle x cord
       WINDOW_HEIGHT / 2 - 25, // Rectangle y cord
-      210,                    // Height of the rectangle
+      200,                    // Height of the rectangle
       50                      // Width of the rectangle
     };
 
@@ -288,22 +296,19 @@ int init_conn(Game *pGame) {
     SDL_Rect input_text_rect = { 
       input_rect.x + 15,        // Rectangle x cord
       input_rect.y + 15,        // Rectangle y cord
-      input_rect.w = txt_width, // Height of the rectangle
+      input_rect.w - 30,         // Height of the rectangle
       input_rect.h - 30         // Width of the rectangle
     };
 
     SDL_Rect message = { 
-      text_rect.x = 250,        // Rectangle x cord
+      text_rect.x = 300,        // Rectangle x cord
       text_rect.y = 150,        // Rectangle y cord
-      text_rect.w = 300, // Height of the rectangle
+      text_rect.w = 300,        // Height of the rectangle
       text_rect.h = 100         // Width of the rectangle
     };
 
     SDL_Color text_color = { 
-      255, 
-      255, 
-      255, 
-      255 
+      255, 255, 255, 255 
     };
 
     SDL_Surface* input_text_surface = TTF_RenderText_Solid(pGame->pNetFont, ipAddr, text_color);
@@ -416,7 +421,13 @@ void close(Game *pGame) {
 
   if(pGame->pWaitingText) destroy_text(pGame->pWaitingText);
 
+  if(pGame->pTitleText) destroy_text(pGame->pTitleText); 
+
   if(pGame->pStartText) destroy_text(pGame->pStartText);  
+
+  if(pGame->pTitleFont) TTF_CloseFont(pGame->pTitleFont);
+
+  if(pGame->pStrdFont) TTF_CloseFont(pGame->pStrdFont);
 
   if(pGame->pNetFont) TTF_CloseFont(pGame->pNetFont);
 
