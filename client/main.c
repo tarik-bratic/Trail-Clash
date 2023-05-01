@@ -133,8 +133,20 @@ void run(Game *pGame) {
         }
 
         // Update snake cord, send data
-        for(int i = 0; i < MAX_SNKES; i++)
-          update_snake(pGame->pSnke[i]);
+        for(int i = 0; i < MAX_SNKES; i++) {
+          // Create an array of pointers to other snakes
+          Snake *otherSnakes[MAX_SNKES - 1];
+          int otherSnakesIndex = 0;
+          // Looping through all the other snakes except yours to add it to the array
+          for (int j = 0; j < MAX_SNKES; j++) {
+            if (j != i) {
+              otherSnakes[otherSnakesIndex++] = pGame->pSnke[j];
+            }
+          }
+  
+          update_snake(pGame->pSnke[i], otherSnakes, MAX_SNKES - 1);
+        }
+
         
         // Render snake to the window
         render_snake(pGame);  
