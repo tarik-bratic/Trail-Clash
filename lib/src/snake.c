@@ -65,7 +65,7 @@ void turn_right(Snake *pSnke) {
 /* PRATA OM DESSA TVÅ FUNKTIONER */
 
 /* If a collision has occured return true, else false */
-int check_collision(Snake *pSnke) {
+int check_collision_with_self(Snake *pSnke) {
 
   for (int i = 0; i < pSnke->trailLength; i++) {
     SDL_Rect *trailRect = &pSnke->trailPoints[i];
@@ -76,13 +76,27 @@ int check_collision(Snake *pSnke) {
 
 }
 
+/* If a collision with other snake trails has occured return true, else false */
+int check_collision_with_other_snakes(Snake *pSnke, Snake **otherSnakes, int nrOfSnakes) {
+  for (int s = 0; s < nrOfSnakes; s++) {
+    Snake *otherSnake = otherSnakes[s];
+    for (int i = 0; i < otherSnake->trailLength; i++) {
+      SDL_Rect *trailRect = &otherSnake->trailPoints[i];
+      if (SDL_HasIntersection(&(pSnke->snkeRect), trailRect)) return 1;
+    }
+  }
+  return 0;
+}
+
 /* The snake has collided */
-void check_and_handle_collision(Snake *pSnke) {
-  if (check_collision(pSnke)) pSnke->snakeCollided = 1;
+void check_and_handle_collision(Snake *pSnke, Snake **otherSnakes, int nrOfSnakes) {
+  if (check_collision_with_self(pSnke) || check_collision_with_other_snakes(pSnke, otherSnakes, nrOfSnakes)) {
+    pSnke->snakeCollided = 1;
+  }
 }
 
 /* Update and set new cords and look if player is not outside of the screen */
-void update_snake(Snake *pSnke) {
+void update_snake(Snake *pSnke, Snake **otherSnakes, int nrOfSnakes) {
 
   // Changes distance between snake and trail
   float trail_offset = 32;
@@ -99,7 +113,7 @@ void update_snake(Snake *pSnke) {
     pSnke->yCord += pSnke->yVel = -(0.75 * cos(pSnke->angle * (2 * PI/360)));
     
     // Check for collision
-    check_and_handle_collision(pSnke);
+    check_and_handle_collision(pSnke, otherSnakes, nrOfSnakes);
 
     // Check if snake goes beyond left or right wall
     if (pSnke->xCord < 0) {
