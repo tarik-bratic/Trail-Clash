@@ -118,6 +118,7 @@ void update_snake(Snake *pSnke, Snake **otherSnakes, int nrOfSnakes) {
     // Check if snake goes beyond left or right wall
     if (pSnke->xCord < 0) {
       pSnke->xCord = 0;
+      pSnke->snakeCollided = 1;
     } else if (pSnke->xCord > pSnke->wind_Width - pSnke->snkeRect.w) {
       pSnke->xCord = pSnke->wind_Width - pSnke->snkeRect.w;
     }
@@ -125,6 +126,7 @@ void update_snake(Snake *pSnke, Snake **otherSnakes, int nrOfSnakes) {
     // Check if snake goes beyond top or bottom wall
     if (pSnke->yCord < 0) {
       pSnke->yCord = 0;
+      pSnke->snakeCollided = 1;
     } else if (pSnke->yCord > pSnke->wind_Height - pSnke->snkeRect.h) {
       pSnke->yCord = pSnke->wind_Height - pSnke->snkeRect.h;
     }
