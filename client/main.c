@@ -137,7 +137,7 @@ void run(Game *pGame) {
           // Create an array of pointers to other snakes
           Snake *otherSnakes[MAX_SNKES - 1];
           int otherSnakesIndex = 0;
-          // Looping through all the other snakes except yours to add it to the array
+          // Looping through all the other snakes to add them to the array
           for (int j = 0; j < MAX_SNKES; j++) {
             if (j != i) {
               otherSnakes[otherSnakesIndex++] = pGame->pSnke[j];
