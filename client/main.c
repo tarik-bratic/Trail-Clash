@@ -146,7 +146,6 @@ void run(Game *pGame) {
   
           update_snake(pGame->pSnke[i], otherSnakes, MAX_SNKES - 1);
         }
-
         
         // Render snake to the window
         render_snake(pGame);  

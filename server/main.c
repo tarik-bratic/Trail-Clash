@@ -148,18 +148,10 @@ void run(Game *pGame) {
               otherSnakes[otherSnakesIndex++] = pGame->pSnke[j];
             }
           }
-<<<<<<< HEAD
-
-          update_snake(pGame->pSnke[i], otherSnakes, MAX_SNKES - 1);
-        }
-
-
-=======
   
           update_snake(pGame->pSnke[i], otherSnakes, MAX_SNKES - 1);
         }
 
->>>>>>> sdl_net
         // Render snake to the window
         render_snake(pGame);
       break;
