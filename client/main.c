@@ -265,7 +265,7 @@ int init_conn(Game *pGame) {
           closeRequest = 0;
         break;
         case SDL_TEXTINPUT:
-          if (input_cursor_position < 14) {
+          if (input_cursor_position < 15) {
             strcat(ipAddr, event.text.text);
             input_cursor_position += strlen(event.text.text);
           }
