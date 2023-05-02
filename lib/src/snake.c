@@ -92,7 +92,6 @@ int check_collision_with_other_snakes(Snake *pSnke, Snake **otherSnakes, int nrO
 void check_and_handle_collision(Snake *pSnke, Snake **otherSnakes, int nrOfSnakes) {
   if (check_collision_with_self(pSnke) || check_collision_with_other_snakes(pSnke, otherSnakes, nrOfSnakes)) {
     pSnke->snakeCollided = 1;
-    destroy_snake(pSnke);
   }
 }
 
@@ -118,16 +117,14 @@ void update_snake(Snake *pSnke, Snake **otherSnakes, int nrOfSnakes) {
 
     // Check if snake goes beyond left or right wall
     if (pSnke->xCord < 0) {
-      // pSnke->xCord = 0;
-      destroy_snake(pSnke);
+      pSnke->xCord = 0;
     } else if (pSnke->xCord > pSnke->wind_Width - pSnke->snkeRect.w) {
       pSnke->xCord = pSnke->wind_Width - pSnke->snkeRect.w;
     }
 
     // Check if snake goes beyond top or bottom wall
     if (pSnke->yCord < 0) {
-      // pSnke->yCord = 0;
-      destroy_snake(pSnke);
+      pSnke->yCord = 0;
     } else if (pSnke->yCord > pSnke->wind_Height - pSnke->snkeRect.h) {
       pSnke->yCord = pSnke->wind_Height - pSnke->snkeRect.h;
     }
