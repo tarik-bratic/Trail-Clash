@@ -10,7 +10,7 @@ ifneq ($(OS), Windows_NT)
 endif
 
 INCLUDE = C:\msys64\mingw64\include
-LDFLAGS = -lSDL2main -lSDL2 -lSDL2_image -lSDL2_ttf -lm
+LDFLAGS = -lSDL2main -lSDL2 -lSDL2_image -lSDL2_ttf -lSDL2_net -lm
 LDFLAGS_WINDOWS := -lmingw32 -mwindows
 LDFLAGS_MAC := -L /opt/homebrew/lib
 
@@ -22,14 +22,20 @@ ifeq ($(CURRETN_OS), mac)
 	LDFLAGS := $(LDFLAGS_MAC) $(LDFLAGS)
 endif
 
-trailClash: main.o snake.o
-	gcc -o trailClash main.o snake.o $(LDFLAGS)
+trailClashServer: main.o init.o text.o snake.o
+	gcc -o trailClashServer main.o init.o text.o snake.o $(LDFLAGS)
 
-main.o: ./src/main.c
-	gcc -c ./src/main.c
+main.o: main.c
+	gcc -c main.c
 
-snake.o: ./src/snake.c ./include/snake.h
-	gcc -c ./src/snake.c
+snake.o: ../lib/src/snake.c ../lib/include/snake.h
+	gcc -c ../lib/src/snake.c
+
+text.o: ../lib/src/text.c ../lib/include/text.h
+	gcc -c ../lib/src/text.c
+
+init.o: ../lib/src/init.c ../lib/include/init.h 
+	gcc -c ../lib/src/init.c
 
 clean:
 	rm *.o
