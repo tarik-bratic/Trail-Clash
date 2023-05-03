@@ -22,8 +22,8 @@ typedef struct game {
   int snkeID;
 
   // UI
-  TTF_Font *pStrdFont, *pTitleFont, *pNetFont;
-  Text *pTitleText, *pStartText, *pWaitingText, *pEnterIpAddrs;
+  TTF_Font *pStrdFont, *pTitleBigFont, *pTitleSmallFont, *pNetFont;
+  Text *pTitleBigText, *pTitleSmallText, *pStartText, *pStartDark, *pWaitingText, *pQuitText, *pQuitDark;
 
   // NETWORK
   UDPsocket pSocket;
@@ -41,6 +41,7 @@ int init_allSnakes(Game *pGame);
 void run(Game *pGame);
 void close(Game *pGame);
 void render_snake(Game *pGame);
+void render_background(Game *pGame);
 void update_server_data(Game *pGame);
 void input_handler(Game *pGame, SDL_Event *pEvent);
 
@@ -72,27 +73,44 @@ int init_structure(Game *pGame) {
   pGame->pRenderer = create_render(pGame->pRenderer, pGame->pWindow);
   if ( !pGame->pRenderer) close(pGame);
 
-  pGame->pTitleFont = create_font(pGame->pTitleFont, "../lib/resources/chrustyrock.ttf", 100);
-  if ( !pGame->pTitleFont ) close(pGame);
+  pGame->pTitleBigFont = create_font(pGame->pTitleBigFont, "../lib/resources/ATW.ttf", 120);
+  if ( !pGame->pTitleBigFont ) close(pGame);
 
-  pGame->pStrdFont = create_font(pGame->pStrdFont, "../lib/resources/XBItalic.ttf", 20);
+  pGame->pTitleSmallFont = create_font(pGame->pTitleSmallFont, "../lib/resources/ATW.ttf", 100);
+  if ( !pGame->pTitleSmallFont ) close(pGame);
+
+  pGame->pStrdFont = create_font(pGame->pStrdFont, "../lib/resources/ATW.ttf", 25);
   if ( !pGame->pStrdFont ) close(pGame);
 
-  pGame->pNetFont = create_font(pGame->pNetFont, "../lib/resources/Sigmar-Regular.ttf", 20);
+  pGame->pNetFont = create_font(pGame->pNetFont, "../lib/resources/ATW.ttf", 20);
   if ( !pGame->pNetFont ) close(pGame);
 
-  // Create own text with create_text function. Value is stored in a Text pointer.
-  pGame->pTitleText = create_text(pGame->pRenderer, 70, 168, 65, pGame->pTitleFont,
-    "Trail Clash", WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2);
 
-  pGame->pStartText = create_text(pGame->pRenderer, 70, 168, 65, pGame->pStrdFont,
-    "[SPACE] to join", WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 + 50);
+  // 255, 110, 51
+  // Create own text with create_text function. Value is stored in a Text pointer.
+  pGame->pTitleSmallText = create_text(pGame->pRenderer, 38, 175, 255, pGame->pTitleSmallFont,
+    "Trail", WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 - 160);
+
+  pGame->pTitleBigText = create_text(pGame->pRenderer, 255, 110, 51, pGame->pTitleBigFont,
+    "Clash", WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 - 70);
+
+  pGame->pStartText = create_text(pGame->pRenderer, 38, 175, 255, pGame->pStrdFont,
+    "START GAME", WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 + 50);
+
+  pGame->pStartDark = create_text(pGame->pRenderer, 255, 255, 255, pGame->pStrdFont,
+    "START GAME", WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 + 50);
+
+  pGame->pQuitText = create_text(pGame->pRenderer, 38, 175, 255, pGame->pStrdFont,
+    "Quit Game", WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 + 100);
+
+  pGame->pQuitDark = create_text(pGame->pRenderer, 255, 255, 255, pGame->pStrdFont,
+    "Quit Game", WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 + 100);
 
   pGame->pWaitingText = create_text(pGame->pRenderer, 238, 168, 65,pGame->pStrdFont,
     "Waiting for server ...", WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 + 100);
 
   // Checking if there is an error regarding the Text pointer.
-  if (!pGame->pStartText || !pGame->pWaitingText || !pGame->pTitleText) {
+  if (!pGame->pStartText || !pGame->pStartDark || !pGame->pWaitingText || !pGame->pTitleBigText || !pGame->pTitleSmallText) {
     printf("Error: %s\n", SDL_GetError());
     close(pGame);
     return 0;
@@ -100,7 +118,7 @@ int init_structure(Game *pGame) {
 
   init_allSnakes(pGame);
 
-  init_conn(pGame);
+  // init_conn(pGame);
 
   return 1;
 
@@ -113,6 +131,7 @@ void run(Game *pGame) {
   ClientData cData;
   int joining = 0;
   int closeRequest = 0;
+  int text_index = 0;
 
   while(!closeRequest) {
 
@@ -154,8 +173,19 @@ void run(Game *pGame) {
       case START:
         // If you haven't joined display start text if not display waiting text
         if (!joining) {
-          draw_text(pGame->pTitleText);
-          draw_text(pGame->pStartText);
+          
+          render_background(pGame);
+          draw_text(pGame->pTitleSmallText);
+          draw_text(pGame->pTitleBigText);
+
+          if (text_index == 0) {
+            draw_text(pGame->pStartText);
+            draw_text(pGame->pQuitDark);
+          } else if (text_index == 1) {
+            draw_text(pGame->pStartDark);
+            draw_text(pGame->pQuitText);
+          }
+
         } else {
           SDL_SetRenderDrawColor(pGame->pRenderer,0,0,0,255);
           SDL_RenderClear(pGame->pRenderer);
@@ -166,17 +196,39 @@ void run(Game *pGame) {
         // Update screen with new render
         SDL_RenderPresent(pGame->pRenderer);
 
-        // Looking if player has pressed spacebar
+        // Looking if there is an input
         if (SDL_PollEvent(&event)) {
+
+          // Close window
           if (event.type == SDL_QUIT) closeRequest = 1;
+
+          // Arrow Up
+          if (event.type == SDL_KEYDOWN && event.key.keysym.scancode == SDL_SCANCODE_UP) text_index -= 1;
+          if (text_index < 0) text_index = 0;
+          // Arrow Down
+          if (event.type == SDL_KEYDOWN && event.key.keysym.scancode == SDL_SCANCODE_DOWN) text_index += 1;
+          if (text_index > 1) text_index = 1;
           
           if (!joining && event.type == SDL_KEYDOWN && event.key.keysym.scancode == SDL_SCANCODE_SPACE) {
+
+            // START GAME
+            if (text_index == 0) {
+              init_conn(pGame);
+
               // Change client data and copy to packet (Space is pressed)
               joining = 1;
               cData.command = READY;
               cData.snkeNumber = -1;
               memcpy(pGame->pPacket->data, &cData, sizeof(ClientData));
 		          pGame->pPacket->len = sizeof(ClientData);
+              
+            }
+
+            // QUIT
+            if (text_index == 1) {
+              closeRequest = 1;
+            }
+
           }
         }
 
@@ -407,6 +459,19 @@ void render_snake(Game *pGame) {
 
 }
 
+//Render background for the game
+void render_background(Game *pGame) {
+  SDL_SetRenderDrawColor(pGame->pRenderer, 9, 66, 100, 255);
+  SDL_RenderClear(pGame->pRenderer);
+  SDL_SetRenderDrawColor(pGame->pRenderer, 7, 52, 80, 255);
+  for (int i = 0; i <= WINDOW_WIDTH; i += 10) {
+    for(int j = 0; j <= WINDOW_HEIGHT; j += 10) {
+      SDL_Rect pointRect = { i - POINT_SIZE / 2, j - POINT_SIZE / 2, POINT_SIZE, POINT_SIZE };
+      SDL_RenderFillRect(pGame->pRenderer, &pointRect);
+    }
+  }
+}
+
 /* Destoryes various SDL libraries and snakes. Safe way when exiting game. */
 void close(Game *pGame) {
 
@@ -419,11 +484,21 @@ void close(Game *pGame) {
 
   if(pGame->pWaitingText) destroy_text(pGame->pWaitingText);
 
-  if(pGame->pTitleText) destroy_text(pGame->pTitleText); 
+  if(pGame->pTitleBigText) destroy_text(pGame->pTitleBigText); 
+
+  if(pGame->pTitleSmallText) destroy_text(pGame->pTitleSmallText); 
 
   if(pGame->pStartText) destroy_text(pGame->pStartText);  
 
-  if(pGame->pTitleFont) TTF_CloseFont(pGame->pTitleFont);
+  if(pGame->pStartDark) destroy_text(pGame->pStartDark);
+
+  if(pGame->pQuitDark) destroy_text(pGame->pQuitDark);
+  
+  if(pGame->pQuitText) destroy_text(pGame->pQuitText);
+
+  if(pGame->pTitleBigFont) TTF_CloseFont(pGame->pTitleBigFont);
+
+  if(pGame->pTitleSmallFont) TTF_CloseFont(pGame->pTitleSmallFont);
 
   if(pGame->pStrdFont) TTF_CloseFont(pGame->pStrdFont);
 

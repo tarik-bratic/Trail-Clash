@@ -70,8 +70,13 @@ int init_structure(Game *pGame) {
 
   if ( !init_sdl_libraries() ) return 0; 
 
-  pGame->pWindow = main_wind("Trail Clash - server", pGame->pWindow);
-  if ( !pGame->pWindow ) close(pGame);
+  pGame->pWindow = SDL_CreateWindow("trailClash - server", SDL_WINDOWPOS_CENTERED, 
+    SDL_WINDOWPOS_CENTERED, WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_HIDDEN);
+
+  if (!pGame->pWindow) {
+    printf("Error (Window): %s\n", SDL_GetError());
+    return 0;  
+  }
 
   pGame->pRenderer = create_render(pGame->pRenderer, pGame->pWindow);
   if ( !pGame->pRenderer) close(pGame);
