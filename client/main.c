@@ -12,6 +12,8 @@
 #include "../lib/include/init.h"
 #include "../lib/include/item.h"
 
+#define TA_BORT 100 //Kan ta bort, behövde commit
+
 /* Client Game struct (Snake, UI, Network) */
 typedef struct game {
 
