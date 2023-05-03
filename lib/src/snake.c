@@ -211,3 +211,12 @@ void update_recived_snake_data(Snake *pSnke, SnakeData *pSnkeData) {
     pSnke->trailCounter = pSnkeData->trailCounter;
     pSnke->trailLength = pSnkeData->trailLength;
 }
+
+int collideSnake(Snake *pSnake, SDL_Rect rect){
+    //return SDL_HasIntersection(&(pSnake->snkeRect),&rect);
+    return distance(pSnake->snkeRect.x+pSnake->snkeRect.w/2,pSnake->snkeRect.y+pSnake->snkeRect.h/2,rect.x+rect.w/2,rect.y+rect.h/2)<(pSnake->snkeRect.w+rect.w)/2;
+}
+
+static float distance(int x1, int y1, int x2, int y2){
+    return sqrt((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1));
+}

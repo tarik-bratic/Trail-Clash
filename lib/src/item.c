@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include "../include/item.h"
+#include "../include/data.h"
 
 struct itemImage{
     SDL_Renderer *pRenderer;
@@ -15,7 +16,7 @@ struct item{
     SDL_Renderer *pRenderer;
     SDL_Texture *pTexture;
     SDL_Rect rect;
-};
+}; 
 
 static void getStartValues(Item *a);
 
