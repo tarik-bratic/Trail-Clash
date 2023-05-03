@@ -5,8 +5,9 @@ typedef struct snake Snake;
 typedef struct snakeData SnakeData;
 
 Snake *create_snake(int number, SDL_Renderer *pRenderer, int window_width, int window_height);
-void update_snake(Snake *pSnke, Snake **otherSnakes, int nrOfSnakes);
+void update_snake(Snake *pSnke, Snake **otherSnakes, int nrOfSnakes, int key);
 void reset_snake(Snake *pSnke);
+void accelerate(Snake *pSnke);
 void turn_left(Snake *pSnke);
 void turn_right(Snake *pSnke);
 void draw_snake(Snake *pSnke);

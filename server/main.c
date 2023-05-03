@@ -11,6 +11,7 @@
 #include "../lib/include/text.h"
 #include "../lib/include/init.h"
 #include "../lib/include/snake.h"
+#include "../lib/include/item.h"
 
 /* Server Game struct (Snake, UI, Network) */
 typedef struct game {
@@ -32,6 +33,13 @@ typedef struct game {
   ServerData sData;
   int num_of_clients;
 
+  //ITEM
+  ItemImage *pItemImage[MAX_ITEMS];
+  Item *pItems[MAX_ITEMS];
+
+  //TIMER
+  int startTime;
+
   GameState state;
 
 } Game;
@@ -46,6 +54,7 @@ void render_snake(Game *pGame);
 void send_gameData(Game *pGame);
 void execute_command(Game *pGame, ClientData cData);
 void add_client(IPaddress address, IPaddress clients[], int *pNumOfClients);
+int spawnItem(Game *pGame, int NrOfItems);
 
 int main(int argv, char** args) {
   
@@ -115,6 +124,7 @@ void run(Game *pGame) {
   SDL_Event event;
   ClientData cData;
   int closeRequest = 0;
+  int boostKey = 0;
 
   while(!closeRequest) {
 
@@ -149,7 +159,7 @@ void run(Game *pGame) {
             }
           }
   
-          update_snake(pGame->pSnke[i], otherSnakes, MAX_SNKES - 1);
+          update_snake(pGame->pSnke[i], otherSnakes, MAX_SNKES - 1, boostKey);
         }
 
         // Render snake to the window
@@ -296,4 +306,22 @@ void close(Game *pGame) {
   TTF_Quit(); 
   SDL_Quit();
 
+}
+
+
+int spawnItem(Game *pGame, int NrOfItems)
+{
+  int spawn = rand() % 500;
+    if(spawn == 0)
+    {
+      if(NrOfItems==MAX_ITEMS)
+      {}
+      else
+      {
+        pGame->pItemImage[NrOfItems] = createItemImage(pGame->pRenderer);
+        pGame->pItems[NrOfItems] = createItem(pGame->pItemImage[NrOfItems],WINDOW_WIDTH,WINDOW_HEIGHT, 0); 
+        NrOfItems++;
+      }
+    }
+    return NrOfItems;
 }

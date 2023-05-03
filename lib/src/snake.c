@@ -52,6 +52,12 @@ Snake *create_snake(int number, SDL_Renderer *pRenderer, int wind_Width, int win
 
 }
 
+void accelerate(Snake *pSnke) {
+
+    pSnke->xCord += pSnke->xVel = 0.5 * sin(pSnke->angle * (2 * PI/360));
+    pSnke->yCord += pSnke->yVel = -(0.5 * cos(pSnke->angle * (2 * PI/360)));
+}
+
 /* Command to turn left */
 void turn_left(Snake *pSnke) {
     pSnke->angle -= 5.0;
@@ -96,7 +102,7 @@ void check_and_handle_collision(Snake *pSnke, Snake **otherSnakes, int nrOfSnake
 }
 
 /* Update and set new cords and look if player is not outside of the screen */
-void update_snake(Snake *pSnke, Snake **otherSnakes, int nrOfSnakes) {
+void update_snake(Snake *pSnke, Snake **otherSnakes, int nrOfSnakes, int key) {
 
   // Changes distance between snake and trail
   float trail_offset = 8;
@@ -112,6 +118,10 @@ void update_snake(Snake *pSnke, Snake **otherSnakes, int nrOfSnakes) {
     pSnke->xCord += pSnke->xVel = 1.5 * sin(pSnke->angle * (2 * PI/360));
     pSnke->yCord += pSnke->yVel = -(1.5 * cos(pSnke->angle * (2 * PI/360)));
     
+    if(key==1){
+    pSnke->xCord += pSnke->xVel*3;
+    pSnke->yCord += pSnke->yVel*3;
+    }
     // Check for collision
     check_and_handle_collision(pSnke, otherSnakes, nrOfSnakes);
 

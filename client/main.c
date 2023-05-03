@@ -10,6 +10,7 @@
 #include "../lib/include/text.h"
 #include "../lib/include/snake.h"
 #include "../lib/include/init.h"
+#include "../lib/include/item.h"
 
 /* Client Game struct (Snake, UI, Network) */
 typedef struct game {
@@ -23,12 +24,19 @@ typedef struct game {
 
   // UI
   TTF_Font *pStrdFont, *pTitleFont, *pNetFont;
-  Text *pTitleText, *pStartText, *pWaitingText, *pEnterIpAddrs;
+  Text *pTitleText, *pStartText, *pQuitText, *pWaitingText, *pEnterIpAddrs;
 
   // NETWORK
   UDPsocket pSocket;
   UDPpacket *pPacket;
   IPaddress serverAdd;
+
+  // ITEM
+  ItemImage *pItemImage[MAX_ITEMS];
+  Item *pItems[MAX_ITEMS];
+
+  //TIMER
+  int startTime;
 
   GameState state;
 
@@ -43,6 +51,8 @@ void close(Game *pGame);
 void render_snake(Game *pGame);
 void update_server_data(Game *pGame);
 void input_handler(Game *pGame, SDL_Event *pEvent);
+int spawnItem(Game *pGame, int nrOfItems);
+
 
 int main(int argv, char** args) {
   
@@ -88,6 +98,9 @@ int init_structure(Game *pGame) {
   pGame->pStartText = create_text(pGame->pRenderer, 70, 168, 65, pGame->pStrdFont,
     "[SPACE] to join", WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 + 50);
 
+  pGame->pQuitText = create_text(pGame->pRenderer, 70, 168, 65, pGame->pStrdFont, 
+    "Q: Quit Game", WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 + 150);
+
   pGame->pWaitingText = create_text(pGame->pRenderer, 238, 168, 65,pGame->pStrdFont,
     "Waiting for server ...", WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 + 100);
 
@@ -113,6 +126,7 @@ void run(Game *pGame) {
   ClientData cData;
   int joining = 0;
   int closeRequest = 0;
+  int boostKey = 0;
 
   while(!closeRequest) {
 
@@ -144,7 +158,7 @@ void run(Game *pGame) {
             }
           }
   
-          update_snake(pGame->pSnke[i], otherSnakes, MAX_SNKES - 1);
+          update_snake(pGame->pSnke[i], otherSnakes, MAX_SNKES - 1, boostKey);
         }
         
         // Render snake to the window
@@ -156,6 +170,7 @@ void run(Game *pGame) {
         if (!joining) {
           draw_text(pGame->pTitleText);
           draw_text(pGame->pStartText);
+          draw_text(pGame->pQuitText);
         } else {
           SDL_SetRenderDrawColor(pGame->pRenderer,0,0,0,255);
           SDL_RenderClear(pGame->pRenderer);
@@ -178,6 +193,13 @@ void run(Game *pGame) {
               memcpy(pGame->pPacket->data, &cData, sizeof(ClientData));
 		          pGame->pPacket->len = sizeof(ClientData);
           }
+          else if (event.type == SDL_KEYDOWN && event.key.keysym.scancode == SDL_SCANCODE_Q)
+        {
+          /* Kommentar av Adil: försökt stänga spelet sådär om man trycker Q,
+          det funkar men kommer fram segmentation fault på Msys även om det fungerar som tänkt */
+          closeRequest = 1;
+          close(pGame);
+        }
         }
 
         // Send client data packet
@@ -433,4 +455,21 @@ void close(Game *pGame) {
   TTF_Quit(); 
   SDL_Quit();
 
+}
+
+int spawnItem(Game *pGame, int NrOfItems)
+{
+  int spawn = rand() % 500;
+    if(spawn == 0)
+    {
+      if(NrOfItems==MAX_ITEMS)
+      {}
+      else
+      {
+        pGame->pItemImage[NrOfItems] = createItemImage(pGame->pRenderer);
+        pGame->pItems[NrOfItems] = createItem(pGame->pItemImage[NrOfItems],WINDOW_WIDTH,WINDOW_HEIGHT, 0); 
+        NrOfItems++;
+      }
+    }
+    return NrOfItems;
 }
