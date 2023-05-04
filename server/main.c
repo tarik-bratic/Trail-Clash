@@ -36,6 +36,7 @@ typedef struct game {
   //ITEM
   ItemImage *pItemImage[MAX_ITEMS];
   Item *pItems[MAX_ITEMS];
+  int numItems;
 
   //TIMER
   int startTime;
@@ -46,6 +47,7 @@ typedef struct game {
 
 int init_structure(Game *pGame);
 int init_allSnakes(Game *pGame);
+int init_Items(Game *pGame);
 
 void run(Game *pGame);
 void close(Game *pGame);
@@ -76,6 +78,7 @@ int init_structure(Game *pGame) {
   pGame->num_of_clients = 0;
   pGame->num_of_snkes = MAX_SNKES;
   pGame->sData.connPlayers = MAX_SNKES;
+  pGame->numItems = MAX_ITEMS;
 
   if ( !init_sdl_libraries() ) return 0; 
 
@@ -99,6 +102,8 @@ int init_structure(Game *pGame) {
   }
 
   init_allSnakes(pGame);
+
+ init_Items(pGame);
 
   // Establish server to client 
   if ( !(pGame->pSocket = SDLNet_UDP_Open(2000)) ) {
@@ -125,6 +130,8 @@ void run(Game *pGame) {
   ClientData cData;
   int closeRequest = 0;
   int boostKey = 0;
+  int nrOfItems = 0;
+  int replace;
 
   while(!closeRequest) {
 
@@ -268,13 +275,37 @@ int init_allSnakes(Game *pGame) {
 
 }
 
+int init_Items(Game *pGame) {
+   // creates Items and creates their image
+   SDL_SetRenderDrawColor(pGame->pRenderer,0,0,0,255);
+  SDL_RenderClear(pGame->pRenderer);
+  SDL_SetRenderDrawColor(pGame->pRenderer,230,230,230,255);
+
+  for (int i = 0; i < MAX_ITEMS; i++)
+  {
+    pGame->pItemImage[i] = createItemImage(pGame->pRenderer);
+    pGame->pItems[i] = createItem(pGame->pItemImage[i], WINDOW_WIDTH, WINDOW_HEIGHT, 1);
+  }
+
+  for (int i = 0; i < MAX_ITEMS; i++)
+  {
+    if (!pGame->pItemImage[i] || !pGame->pItems[i])
+    {
+      printf("Error: %s", SDL_GetError());
+      close(pGame);
+      return 0;
+    }
+    }
+}
+
 /* Render a snake to the window */
 void render_snake(Game *pGame) {
 
   SDL_SetRenderDrawColor(pGame->pRenderer,0,0,0,255);
   SDL_RenderClear(pGame->pRenderer);
   SDL_SetRenderDrawColor(pGame->pRenderer,230,230,230,255);
-
+  for (int i = 0; i < MAX_ITEMS; i++)
+    drawItem(pGame->pItems[i]);
   for (int i = 0; i < MAX_SNKES; i++) {
     draw_snake(pGame->pSnke[i]);
     draw_trail(pGame->pSnke[i]);

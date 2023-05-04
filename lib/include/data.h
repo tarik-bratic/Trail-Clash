@@ -9,7 +9,7 @@
 #define MAX_TRAIL_LENGTH 100
 #define INPUT_BUFFER_SIZE 128
 #define MAX_TRAIL_POINTS 100000000
-#define MAX_ITEMS 1
+#define MAX_ITEMS 3
 
 enum gameState { START, RUNNING };
 typedef enum gameState GameState;

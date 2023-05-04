@@ -24,11 +24,13 @@ ItemImage *createItemImage(SDL_Renderer *pRenderer){
     static ItemImage* pItemImage = NULL;
     if(pItemImage==NULL){
         pItemImage = malloc(sizeof(struct itemImage));
-        SDL_Surface *surface = IMG_Load("resources/Item.png");
+        SDL_Surface *surface = IMG_Load("../lib/resources/Item.png");
         if(!surface){
             printf("Error: %s\n",SDL_GetError());
             return NULL;
         }
+
+    //create texture and check for error
         pItemImage->pRenderer = pRenderer;
         pItemImage->pTexture = SDL_CreateTextureFromSurface(pRenderer, surface);
         SDL_FreeSurface(surface);
