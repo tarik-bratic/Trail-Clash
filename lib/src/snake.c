@@ -155,6 +155,7 @@ void reset_snake(Snake *pSnke) {
   pSnke->angle=0;
   pSnke->xVel=pSnke->yVel=0;
   pSnke->alive = 1;
+  pSnke->trailLength=0;
 }
 
 /* Render a copy of a snake */
