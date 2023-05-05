@@ -39,8 +39,8 @@ Snake *create_snake(int number, SDL_Renderer *pRenderer, int wind_Width, int win
     &(pSnke->snkeRect.w), &(pSnke->snkeRect.h));
 
   // Set width and height of object
-  pSnke->snkeRect.w /= 24;
-  pSnke->snkeRect.h /= 24;
+  pSnke->snkeRect.w /= 48;
+  pSnke->snkeRect.h /= 48;
 
   // Set start position on the center
   pSnke->xSrt = pSnke->xCord = pSnke->snkeRect.x = 
@@ -99,7 +99,7 @@ void check_and_handle_collision(Snake *pSnke, Snake **otherSnakes, int nrOfSnake
 void update_snake(Snake *pSnke, Snake **otherSnakes, int nrOfSnakes) {
 
   // Changes distance between snake and trail
-  float trail_offset = 32;
+  float trail_offset = 8;
 
   // Collision has not happened, run code below
   if (!pSnke->snakeCollided) {
@@ -109,8 +109,8 @@ void update_snake(Snake *pSnke, Snake **otherSnakes, int nrOfSnakes) {
     float prev_yCord = pSnke->yCord + (pSnke->snkeRect.h / 2);
 
     // Update coardinates
-    pSnke->xCord += pSnke->xVel = 0.75 * sin(pSnke->angle * (2 * PI/360));
-    pSnke->yCord += pSnke->yVel = -(0.75 * cos(pSnke->angle * (2 * PI/360)));
+    pSnke->xCord += pSnke->xVel = 1.5 * sin(pSnke->angle * (2 * PI/360));
+    pSnke->yCord += pSnke->yVel = -(1.5 * cos(pSnke->angle * (2 * PI/360)));
     
     // Check for collision
     check_and_handle_collision(pSnke, otherSnakes, nrOfSnakes);
