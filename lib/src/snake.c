@@ -18,7 +18,7 @@ Snake *create_snake(int number, SDL_Renderer *pRenderer, int wind_Width, int win
   pSnke->wind_Height = wind_Height;
 
   // Load desired image
-  SDL_Surface *pSurface = IMG_Load("../lib/resources/Red_circle.png");
+  SDL_Surface *pSurface = IMG_Load("../lib/resources/square.png");
   if (!pSurface) {
       printf("Error: %s\n", SDL_GetError());
       return NULL;
@@ -39,8 +39,8 @@ Snake *create_snake(int number, SDL_Renderer *pRenderer, int wind_Width, int win
     &(pSnke->snkeRect.w), &(pSnke->snkeRect.h));
 
   // Set width and height of object
-  pSnke->snkeRect.w /= 48;
-  pSnke->snkeRect.h /= 48;
+  pSnke->snkeRect.w /= 4;
+  pSnke->snkeRect.h /= 4;
 
   // Set start position on the center
   pSnke->xSrt = pSnke->xCord = pSnke->snkeRect.x = 
@@ -118,19 +118,15 @@ void update_snake(Snake *pSnke, Snake **otherSnakes, int nrOfSnakes) {
     // Check if snake goes beyond left or right wall
     if (pSnke->xCord < 0) {
       pSnke->xCord = 0;
-      pSnke->snakeCollided = 1;
     } else if (pSnke->xCord > pSnke->wind_Width - pSnke->snkeRect.w) {
       pSnke->xCord = pSnke->wind_Width - pSnke->snkeRect.w;
-      pSnke->snakeCollided = 1;
     }
 
     // Check if snake goes beyond top or bottom wall
     if (pSnke->yCord < 0) {
       pSnke->yCord = 0;
-      pSnke->snakeCollided = 1;
     } else if (pSnke->yCord > pSnke->wind_Height - pSnke->snkeRect.h) {
       pSnke->yCord = pSnke->wind_Height - pSnke->snkeRect.h;
-      pSnke->snakeCollided = 1;
     }
 
     // Set new cordinates
@@ -141,8 +137,8 @@ void update_snake(Snake *pSnke, Snake **otherSnakes, int nrOfSnakes) {
     if (pSnke->trailLength < MAX_TRAIL_POINTS) {
       pSnke->trailPoints[pSnke->trailLength].x = prev_xCord - pSnke->snkeRect.w / 2 - pSnke->xVel * trail_offset;
       pSnke->trailPoints[pSnke->trailLength].y = prev_yCord - pSnke->snkeRect.h / 2 - pSnke->yVel * trail_offset;
-      pSnke->trailPoints[pSnke->trailLength].w = pSnke->snkeRect.w;
-      pSnke->trailPoints[pSnke->trailLength].h = pSnke->snkeRect.h;
+      pSnke->trailPoints[pSnke->trailLength].w = pSnke->snkeRect.w / 16;
+      pSnke->trailPoints[pSnke->trailLength].h = pSnke->snkeRect.h / 16;
       pSnke->trailLength++;
     }
 
@@ -157,15 +153,6 @@ void reset_snake(Snake *pSnke) {
   pSnke->angle=0;
   pSnke->xVel=pSnke->yVel=0;
   pSnke->alive = 1;
-  pSnke->trailLength=0;
-  pSnke->trailCounter=0;
-  pSnke->snakeCollided=0;
-  for(int i=0;i<MAX_TRAIL_POINTS;i++){
-    pSnke->trailPoints[i].x=0;
-    pSnke->trailPoints[i].y=0;
-    pSnke->trailPoints[i].w=0;
-    pSnke->trailPoints[i].h=0;
-  }
 }
 
 /* Render a copy of a snake */

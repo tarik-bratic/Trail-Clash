@@ -11,7 +11,7 @@ endif
 
 INCLUDE = C:\msys64\mingw64\include
 LDFLAGS = -lSDL2main -lSDL2 -lSDL2_image -lSDL2_ttf -lSDL2_net -lm
-LDFLAGS_WINDOWS := -lmingw32
+LDFLAGS_WINDOWS := -lmingw32 -mwindows
 LDFLAGS_MAC := -L /opt/homebrew/lib
 
 ifeq ($(CURRETN_OS), windows)
