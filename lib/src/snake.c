@@ -121,6 +121,7 @@ void update_snake(Snake *pSnke, Snake **otherSnakes, int nrOfSnakes) {
       pSnke->snakeCollided = 1;
     } else if (pSnke->xCord > pSnke->wind_Width - pSnke->snkeRect.w) {
       pSnke->xCord = pSnke->wind_Width - pSnke->snkeRect.w;
+      pSnke->snakeCollided = 1;
     }
 
     // Check if snake goes beyond top or bottom wall
@@ -129,6 +130,7 @@ void update_snake(Snake *pSnke, Snake **otherSnakes, int nrOfSnakes) {
       pSnke->snakeCollided = 1;
     } else if (pSnke->yCord > pSnke->wind_Height - pSnke->snkeRect.h) {
       pSnke->yCord = pSnke->wind_Height - pSnke->snkeRect.h;
+      pSnke->snakeCollided = 1;
     }
 
     // Set new cordinates
@@ -156,6 +158,14 @@ void reset_snake(Snake *pSnke) {
   pSnke->xVel=pSnke->yVel=0;
   pSnke->alive = 1;
   pSnke->trailLength=0;
+  pSnke->trailCounter=0;
+  pSnke->snakeCollided=0;
+  for(int i=0;i<MAX_TRAIL_POINTS;i++){
+    pSnke->trailPoints[i].x=0;
+    pSnke->trailPoints[i].y=0;
+    pSnke->trailPoints[i].w=0;
+    pSnke->trailPoints[i].h=0;
+  }
 }
 
 /* Render a copy of a snake */
