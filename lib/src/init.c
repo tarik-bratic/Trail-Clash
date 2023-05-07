@@ -5,9 +5,9 @@
 #include "../include/data.h"
 #include "../include/init.h"
 
-/*
-*  Initialize necesery SDL libraries.
-*  SDL, TTF and SDLNet are initiated after function call.
+/**
+ * Initialize necesery SDL libraries.
+ * SDL, TTF and SDLNet are initiated after function call.
 */
 int init_sdl_libraries() {
 
@@ -37,13 +37,13 @@ int init_sdl_libraries() {
 }
 
 /** 
-*  Create the main window for the game.
-*  \param title The title of the window.
-*  \param pWindow Identifier of SDL_Window
-*  The function also check for error.
-*  \returns Returns the window that was created or NULL on failure; SDL_GetError() for more information.
+ * Create the main window for the game.
+ * \param title The title of the window.
+ * \param pWindow Identifier of SDL_Window
+ * The function also check for error.
+ * \returns Returns the window that was created or NULL on failure; SDL_GetError() for more information.
 */
-SDL_Window *main_wind(const char *title, SDL_Window *pWindow) {
+SDL_Window *client_wind(const char *title, SDL_Window *pWindow) {
 
   pWindow = SDL_CreateWindow(title, SDL_WINDOWPOS_CENTERED, 
     SDL_WINDOWPOS_CENTERED, WINDOW_WIDTH, WINDOW_HEIGHT, 0);
@@ -58,11 +58,32 @@ SDL_Window *main_wind(const char *title, SDL_Window *pWindow) {
 }
 
 /** 
-*  Create a 2D rendering context for a window.
-*  \param pRenderer Identifier of SDL_Renderer.
-*  \param pWindow The window where rendering is displayed.
-*  The function also check for error.
-*  \returns Returns a valid rendering context or NULL if there was an error; SDL_GetError() for more information.
+ * Create the main window for the game.
+ * \param title The title of the window.
+ * \param pWindow Identifier of SDL_Window
+ * The function also check for error.
+ * \returns Returns the window that was created or NULL on failure; SDL_GetError() for more information.
+*/
+SDL_Window *server_wind(const char *title, SDL_Window *pWindow) {
+
+  pWindow = SDL_CreateWindow(title, SDL_WINDOWPOS_CENTERED, 
+    SDL_WINDOWPOS_CENTERED, WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_HIDDEN);
+
+  if (!pWindow) {
+    printf("Error (Window): %s\n", SDL_GetError());
+    return 0;  
+  }
+
+  return pWindow;
+
+}
+
+/** 
+ * Create a 2D rendering context for a window.
+ * \param pRenderer Identifier of SDL_Renderer.
+ * \param pWindow The window where rendering is displayed.
+ * The function also check for error.
+ * \returns Returns a valid rendering context or NULL if there was an error; SDL_GetError() for more information.
 */
 SDL_Renderer *create_render(SDL_Renderer *pRenderer, SDL_Window *pWindow) {
 

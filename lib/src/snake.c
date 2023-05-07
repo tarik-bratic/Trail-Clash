@@ -4,7 +4,7 @@
 #include "../include/data.h"
 #include "../include/snake.h"
 
-/* Function to create a snake with attributes with default values */
+/* Create a snake with attributes */
 Snake *create_snake(int number, SDL_Renderer *pRenderer, int wind_Width, int wind_Height) {
 
   Snake *pSnke = malloc(sizeof(struct snake));
@@ -61,8 +61,6 @@ void turn_left(Snake *pSnke) {
 void turn_right(Snake *pSnke) {
     pSnke->angle += 5.0;
 }
-
-/* PRATA OM DESSA TVÅ FUNKTIONER */
 
 /* If a collision has occured return true, else false */
 int check_collision_with_self(Snake *pSnke) {
@@ -170,13 +168,13 @@ void draw_trail(Snake *pSnke) {
   }
 }
 
-/* Destory snake texture and free */
+/* Destory snake texture and free memory */
 void destroy_snake(Snake *pSnke) {
     SDL_DestroyTexture(pSnke->pTexture);
     free(pSnke);
 }
 
-/* Update snake data from snake (angle, cord, vel) */
+/* Update data Snake -> SnakeData */
 void update_snakeData(Snake *pSnke, SnakeData *pSnkeData) {
     pSnkeData->alive = pSnke->alive;
     pSnkeData->angle = pSnke->angle;
@@ -189,7 +187,7 @@ void update_snakeData(Snake *pSnke, SnakeData *pSnkeData) {
     pSnkeData->trailLength = pSnke->trailLength;
 }
 
-/* Update snake data to snake (angle, cord, vel) */
+/* Update data SnakeData -> Snake */
 void update_recived_snake_data(Snake *pSnke, SnakeData *pSnkeData) {
     pSnke->alive = pSnkeData->alive;
     pSnke->angle = pSnkeData->angle;

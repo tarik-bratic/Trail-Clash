@@ -1,9 +1,12 @@
 #ifndef data_h
 #define data_h
 
+/* CONST VERIABLES */
 #define PI 3.14
+#define MAX_SNKES 2
 #define POINT_SIZE 2
-#define MAX_SNKES 1
+#define DATA_SIZE 512
+#define UDP_SERVER_PORT 2000
 #define WINDOW_WIDTH 900
 #define WINDOW_HEIGHT 560
 #define ONE_MS 1000/60-15
@@ -11,19 +14,23 @@
 #define INPUT_BUFFER_SIZE 128
 #define MAX_TRAIL_POINTS 100000000
 
+/* Game State struct */
 enum gameState { START, RUNNING };
 typedef enum gameState GameState;
 
+/* Client Command struct */
 enum clientCommand { READY, LEFT, RIGHT, DISC };
 typedef enum clientCommand ClientCommand;
 
+/* Client Data struct */
 struct clientData {
     ClientCommand command;
     int snkeNumber;
+    char playerName[INPUT_BUFFER_SIZE];
 };
 typedef struct clientData ClientData;
 
-// Represent the snakes data
+/* Snake Data struct */
 struct snakeData {
 
     float xCord, yCord;
@@ -36,11 +43,13 @@ struct snakeData {
 };
 typedef struct snakeData SnakeData; 
 
+/* Server Data struct */
 struct serverData {
 
     int snkeNum;
     SnakeData snakes[MAX_SNKES];
     GameState gState;
+    int maxConnPlayers;
     int connPlayers;
 
 };

@@ -2,14 +2,17 @@
 #include <SDL2/SDL_ttf.h>
 #include "../include/text.h"
 
-/* text struct (rect, texture, render)*/
+/* text struct */
 struct text {
     SDL_Rect txtRect;
     SDL_Texture *pTexture;
     SDL_Renderer *pRenderer;
 };
 
-/* Function to create a text with various attributes */
+/** 
+ * Allocate a pointer and create a text with the desired content
+ * \return Return pointer on success, if not then return NULL
+*/
 Text *create_text(SDL_Renderer *pRenderer, int r, int g, int b, TTF_Font *pFont, char *pString, int x, int y) {
     
     Text *pText = malloc(sizeof(struct text));
@@ -38,12 +41,12 @@ Text *create_text(SDL_Renderer *pRenderer, int r, int g, int b, TTF_Font *pFont,
 }
 
 /** 
-*  Create a font from a file, using a specified point size.
-*  \param pFont Identifier of TTF_Font.
-*  \param file Path to font file.
-*  \param size_f Size of the font.
-*  The function also check for error.
-*  \returns Returns the font that was created or NULL on failure; TTF_GetError() for more information.
+ * Create a font from a file, using a specified point size.
+ * \param pFont Identifier of TTF_Font.
+ * \param file Path to font file.
+ * \param size_f Size of the font.
+ * The function also check for error.
+ * \returns Returns the font that was created or NULL on failure; TTF_GetError() for more information.
 */
 TTF_Font *create_font(TTF_Font *pFont, char *file, int size_f) {
 
@@ -63,7 +66,7 @@ void draw_text(Text *pText) {
     SDL_RenderCopy(pText->pRenderer, pText->pTexture, NULL, &pText->txtRect);
 }
 
-/* Destory text texture and free */
+/* Destory text texture and free memory */
 void destroy_text(Text *pText) {
     SDL_DestroyTexture(pText->pTexture);
     free(pText);

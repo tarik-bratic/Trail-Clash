@@ -15,6 +15,4 @@ void destroy_snake(Snake *pSnke);
 void update_snakeData(Snake *pSnke, SnakeData *pSnkeData);
 void update_recived_snake_data(Snake *pSnke, SnakeData *pSnkeData);
 
-//void accelerate(Snake *pSnke);
-
 #endif
