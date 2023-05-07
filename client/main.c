@@ -20,6 +20,7 @@ typedef struct game {
   Snake *pSnke[MAX_SNKES];
   int num_of_snkes;
   int snkeID;
+  int collided;
 
   // UI
   TTF_Font *pStrdFont, *pTitleBigFont, *pTitleSmallFont, *pNetFont;
@@ -49,6 +50,8 @@ void render_snake(Game *pGame);
 void render_background(Game *pGame);
 void update_server_data(Game *pGame);
 void input_handler(Game *pGame, SDL_Event *pEvent);
+void collision_counter(Game *pGame);
+void reset_game(Game *pGame);
 
 int main(int argv, char** args) {
   
@@ -169,7 +172,11 @@ void run(Game *pGame) {
         }
         
         // Render snake
-        render_snake(pGame);  
+        render_snake(pGame);
+
+        //Check if one Snake left, if so reset game and display winner (filip)
+        collision_counter(pGame);
+        if (pGame->collided==1) reset_game(pGame);
       break;
       // Main Menu
       case START:
@@ -587,6 +594,27 @@ void render_snake(Game *pGame) {
 
   SDL_RenderPresent(pGame->pRenderer);
 
+}
+
+//Checks nrOfCollisions, if 1 snake alive sets collided to 1 (filip)
+void collision_counter(Game *pGame) {
+  int nrOfCollisions = 0;
+  for (int i = 0; i < MAX_SNKES; i++) {
+    if (pGame->pSnke[i]->snakeCollided == 1) nrOfCollisions++;
+  }
+  if (nrOfCollisions==MAX_SNKES-1) pGame->collided=1;
+}
+
+//sets the game state to START and resets to default values (filip)
+void reset_game(Game *pGame) {
+  
+  for (int i = 0; i < MAX_SNKES; i++){
+    reset_snake(pGame->pSnke[i]);
+  }
+  pGame->collided = 0;
+  SDL_SetRenderDrawColor(pGame->pRenderer, 0, 0, 0, 255);
+  SDL_RenderClear(pGame->pRenderer);
+  pGame->state = START;
 }
 
 /* Render a background for the game */
