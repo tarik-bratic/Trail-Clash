@@ -12,7 +12,7 @@
 #include "../lib/include/init.h"
 #include "../lib/include/snake.h"
 
-/* Server Game struct (Snake, UI, Network) */
+/* Server Game struct */
 typedef struct game {
 
   // SNAKE
@@ -20,10 +20,6 @@ typedef struct game {
   SDL_Renderer *pRenderer;
   Snake *pSnke[MAX_SNKES];
   int num_of_snkes;
-
-  // UI
-  TTF_Font *pNetFont;
-  Text *pWaitingText;
 
   // NETWORK
   UDPsocket pSocket;
@@ -51,8 +47,13 @@ int main(int argv, char** args) {
   
   Game g = { 0 };
 
+  printf("Initiating structure...\n");
   if (!init_structure(&g)) return 1;
+
+  printf("Running... \n");
   run(&g);
+
+  printf("Closeing...\n");
   close(&g);
 
   return 0;
@@ -66,44 +67,27 @@ int init_structure(Game *pGame) {
   pGame->state = START;
   pGame->num_of_clients = 0;
   pGame->num_of_snkes = MAX_SNKES;
-  pGame->sData.connPlayers = MAX_SNKES;
+  pGame->sData.maxConnPlayers = MAX_SNKES;
 
   if ( !init_sdl_libraries() ) return 0; 
 
-  pGame->pWindow = SDL_CreateWindow("trailClash - server", SDL_WINDOWPOS_CENTERED, 
-    SDL_WINDOWPOS_CENTERED, WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_HIDDEN);
-
-  if (!pGame->pWindow) {
-    printf("Error (Window): %s\n", SDL_GetError());
-    return 0;  
-  }
+  pGame->pWindow = server_wind("Server", pGame->pWindow);
+  if ( !pGame->pWindow) close(pGame);
 
   pGame->pRenderer = create_render(pGame->pRenderer, pGame->pWindow);
   if ( !pGame->pRenderer) close(pGame);
 
-  pGame->pNetFont = create_font(pGame->pNetFont, "../lib/resources/Sigmar-Regular.ttf", 20);
-  if ( !pGame->pNetFont ) close(pGame);
-
-  // Create texts, look for error
-  pGame->pWaitingText = create_text(pGame->pRenderer, 238,168,65,pGame->pNetFont,
-    "Waiting for client ...", WINDOW_WIDTH/2, WINDOW_HEIGHT/2+100);
-
-  if (!pGame->pWaitingText) {
-    printf("Error: %s\n", SDL_GetError());
-    close(pGame);
-    return 0;
-  }
-
+  // Create all snakes
   init_allSnakes(pGame);
 
   // Establish server to client 
-  if ( !(pGame->pSocket = SDLNet_UDP_Open(2000)) ) {
+  if ( !(pGame->pSocket = SDLNet_UDP_Open(UDP_SERVER_PORT)) ) {
     printf("SDLNet_UDP_Open: %s\n", SDLNet_GetError());
     close(pGame);
     return 0;
   }
 
-  if ( !(pGame->pPacket = SDLNet_AllocPacket(512)) ) {
+  if ( !(pGame->pPacket = SDLNet_AllocPacket(DATA_SIZE)) ) {
     printf("SDLNet_AllocPacket: %s\n", SDLNet_GetError());
     close(pGame);
     return 0;
@@ -113,19 +97,25 @@ int init_structure(Game *pGame) {
 
 }
 
-/* Main loop of the game. Updates the snakes attributes. Looking for input.
-Sends and recives new data. */
+/* Main loop of the game. Updates the snakes attributes. Looking for input. Sends and recives new data. */
 void run(Game *pGame) {
 
   SDL_Event event;
   ClientData cData;
-  int closeRequest = 0;
+  int showMess = 0;
 
+  int closeRequest = 0;
   while(!closeRequest) {
 
     switch (pGame->state) {
       // The game is running
       case RUNNING:
+        // Show message
+        if (showMess) {
+          printf("Game state: Running\n");
+          showMess--;
+        }
+        
         send_gameData(pGame);
         
         // Update new recived data to client data
@@ -134,46 +124,54 @@ void run(Game *pGame) {
           execute_command(pGame, cData);
         }
 
-        // If no player is connected close window
-        if (pGame->sData.connPlayers == 0) closeRequest = 1;
+        // All player disconnected close window
+        if (pGame->sData.maxConnPlayers == 0) closeRequest = 1;
 
-        // If exiting the program
+        // Exit the program
         if (SDL_PollEvent(&event)) {
           if (event.type == SDL_QUIT) closeRequest = 1;
         }
 
-        // Update snake cord and bullet cord
+        // Create an array of pointers to other snakes
         for(int i = 0; i < MAX_SNKES; i++) {
-          // Create an array of pointers to other snakes
+
           Snake *otherSnakes[MAX_SNKES - 1];
           int otherSnakesIndex = 0;
+
           // Looping through all the other snakes to add them to the array
           for (int j = 0; j < MAX_SNKES; j++) {
-            if (j != i) {
-              otherSnakes[otherSnakesIndex++] = pGame->pSnke[j];
-            }
+            if (j != i) otherSnakes[otherSnakesIndex++] = pGame->pSnke[j];
           }
   
+          // Update snake cord
           update_snake(pGame->pSnke[i], otherSnakes, MAX_SNKES - 1);
+
         }
 
-        // Render snake to the window
+        // Render snake
         render_snake(pGame);
       break;
-      // Waiting for all players
+      // Waiting for all clients
       case START:
-        // Display waiting text
-        draw_text(pGame->pWaitingText);
-        SDL_RenderPresent(pGame->pRenderer);
-
-        // If not exiting program recive new data 
-        if (SDL_PollEvent(&event) && event.type == SDL_QUIT) {
-          closeRequest = 1;
+        // Show message
+        if (!showMess) {
+          printf("Game state: Start\n");
+          showMess++;
         }
 
+        // Exit the program (ctrl + c) 
+        if (SDL_PollEvent(&event) && event.type == SDL_QUIT) closeRequest = 1;
+
+        // If new data recived add client
         if (SDLNet_UDP_Recv(pGame->pSocket, pGame->pPacket) == 1) {
+
+          memcpy(&cData, pGame->pPacket->data, sizeof(ClientData));
+          printf("Client (%s) has joined...\n", cData.playerName);
+
           add_client(pGame->pPacket->address, pGame->clients, &(pGame->num_of_clients));
+
           if (pGame->num_of_clients == MAX_SNKES) set_up_game(pGame);
+
         }
       break;
     }
@@ -187,11 +185,13 @@ void run(Game *pGame) {
 /* Setting up the game with default values and other attributes */
 void set_up_game(Game *pGame) {
 
-    for (int i = 0; i < MAX_SNKES; i++) 
-      reset_snake(pGame->pSnke[i]);
+  printf("Setting up the game...\n");
 
-    pGame->num_of_snkes = MAX_SNKES;
-    pGame->state = RUNNING;
+  pGame->state = RUNNING;
+  pGame->num_of_snkes = MAX_SNKES;
+
+  for (int i = 0; i < MAX_SNKES; i++) 
+    reset_snake(pGame->pSnke[i]);
 
 }
 
@@ -239,14 +239,15 @@ void execute_command(Game *pGame, ClientData cData) {
         turn_right(pGame->pSnke[cData.snkeNumber]);
         break;
       case DISC:
-        pGame->sData.connPlayers -= 1;
+        pGame->sData.maxConnPlayers -= 1;
+      break;
     }
 
 }
 
-/* 
-*  Create all snakes (players) in an array.
-*  Checking for errors.
+/** 
+ * Create all snakes (players) in an array.
+ * Checking for errors.
 */
 int init_allSnakes(Game *pGame) {
 
@@ -288,10 +289,6 @@ void close(Game *pGame) {
   if (pGame->pRenderer) SDL_DestroyRenderer(pGame->pRenderer);
 
   if (pGame->pWindow) SDL_DestroyWindow(pGame->pWindow);
-
-  if (pGame->pWaitingText) destroy_text(pGame->pWaitingText);
-
-  if (pGame->pNetFont) TTF_CloseFont(pGame->pNetFont);
 
   if (pGame->pPacket) SDLNet_FreePacket(pGame->pPacket);
 
