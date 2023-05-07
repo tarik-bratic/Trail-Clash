@@ -602,7 +602,7 @@ void collision_counter(Game *pGame) {
   for (int i = 0; i < MAX_SNKES; i++) {
     if (pGame->pSnke[i]->snakeCollided == 1) nrOfCollisions++;
   }
-  if (nrOfCollisions==MAX_SNKES-1) pGame->collided=1;
+  if (nrOfCollisions==MAX_SNKES-(MAX_SNKES-1)) pGame->collided=1;
 }
 
 //sets the game state to START and resets to default values (filip)
