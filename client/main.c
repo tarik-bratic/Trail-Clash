@@ -11,7 +11,7 @@
 #include "../lib/include/snake.h"
 #include "../lib/include/init.h"
 
-/* Client Game struct (Snake, UI, Network) */
+/* Client Game struct */
 typedef struct game {
 
   // SNAKE
@@ -23,20 +23,25 @@ typedef struct game {
 
   // UI
   TTF_Font *pStrdFont, *pTitleBigFont, *pTitleSmallFont, *pNetFont;
-  Text *pTitleBigText, *pTitleSmallText, *pStartText, *pStartDark, *pWaitingText, *pQuitText, *pQuitDark;
+  Text *pTitleBigText, *pTitleSmallText, *pStartText, *pStartDark, *pWaitingText, *pQuitText, *pQuitDark, *pListPlayers;
 
   // NETWORK
   UDPsocket pSocket;
   UDPpacket *pPacket;
   IPaddress serverAdd;
+  char ipAddr[INPUT_BUFFER_SIZE];
+  char playerName[INPUT_BUFFER_SIZE];
 
   GameState state;
 
 } Game;
 
-int init_conn(Game *pGame);
+int conn_server(Game *pGame);
+int text_getError(Game *pGame);
 int init_structure(Game *pGame);
 int init_allSnakes(Game *pGame);
+int input_text_handler(Game *pGame);
+int disconnect_fromGame(Game *pGame);
 
 void run(Game *pGame);
 void close(Game *pGame);
@@ -67,12 +72,13 @@ int init_structure(Game *pGame) {
 
   if ( !init_sdl_libraries() ) return 0;
 
-  pGame->pWindow = main_wind("Trail Clash - client", pGame->pWindow);
+  pGame->pWindow = client_wind("Trail Clash", pGame->pWindow);
   if ( !pGame->pWindow ) close(pGame);
 
   pGame->pRenderer = create_render(pGame->pRenderer, pGame->pWindow);
   if ( !pGame->pRenderer) close(pGame);
 
+  // Create own font with create_font function. Value is stored in a Text pointer.
   pGame->pTitleBigFont = create_font(pGame->pTitleBigFont, "../lib/resources/ATW.ttf", 120);
   if ( !pGame->pTitleBigFont ) close(pGame);
 
@@ -85,8 +91,6 @@ int init_structure(Game *pGame) {
   pGame->pNetFont = create_font(pGame->pNetFont, "../lib/resources/ATW.ttf", 20);
   if ( !pGame->pNetFont ) close(pGame);
 
-
-  // 255, 110, 51
   // Create own text with create_text function. Value is stored in a Text pointer.
   pGame->pTitleSmallText = create_text(pGame->pRenderer, 38, 175, 255, pGame->pTitleSmallFont,
     "Trail", WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 - 160);
@@ -101,24 +105,19 @@ int init_structure(Game *pGame) {
     "START GAME", WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 + 50);
 
   pGame->pQuitText = create_text(pGame->pRenderer, 38, 175, 255, pGame->pStrdFont,
-    "Quit Game", WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 + 100);
+    "QUIT GAME", WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 + 100);
 
   pGame->pQuitDark = create_text(pGame->pRenderer, 255, 255, 255, pGame->pStrdFont,
-    "Quit Game", WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 + 100);
+    "QUIT GAME", WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 + 100);
 
   pGame->pWaitingText = create_text(pGame->pRenderer, 238, 168, 65,pGame->pStrdFont,
-    "Waiting for server ...", WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 + 100);
+    "Waiting to start ...", WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 + 100);
 
-  // Checking if there is an error regarding the Text pointer.
-  if (!pGame->pStartText || !pGame->pStartDark || !pGame->pWaitingText || !pGame->pTitleBigText || !pGame->pTitleSmallText) {
-    printf("Error: %s\n", SDL_GetError());
-    close(pGame);
-    return 0;
-  }
+  // Checking if there is an error regarding all the Text pointer.
+  text_getError(pGame);
 
+  // Create all snakes
   init_allSnakes(pGame);
-
-  // init_conn(pGame);
 
   return 1;
 
@@ -129,10 +128,12 @@ void run(Game *pGame) {
 
   SDL_Event event;
   ClientData cData;
+  ServerData sData;
   int joining = 0;
-  int closeRequest = 0;
+  int send = 0;
   int text_index = 0;
 
+  int closeRequest = 0;
   while(!closeRequest) {
 
     switch (pGame->state) {
@@ -151,33 +152,36 @@ void run(Game *pGame) {
           else input_handler(pGame, &event);
         }
 
-        // Update snake cord, send data
+        // Create an array of pointers to other snakes
         for(int i = 0; i < MAX_SNKES; i++) {
-          // Create an array of pointers to other snakes
+
           Snake *otherSnakes[MAX_SNKES - 1];
           int otherSnakesIndex = 0;
+
           // Looping through all the other snakes to add them to the array
           for (int j = 0; j < MAX_SNKES; j++) {
-            if (j != i) {
-              otherSnakes[otherSnakesIndex++] = pGame->pSnke[j];
-            }
+            if (j != i) otherSnakes[otherSnakesIndex++] = pGame->pSnke[j];
           }
   
+          // Update snake cord, send data
           update_snake(pGame->pSnke[i], otherSnakes, MAX_SNKES - 1);
+
         }
         
-        // Render snake to the window
+        // Render snake
         render_snake(pGame);  
       break;
       // Main Menu
       case START:
-        // If you haven't joined display start text if not display waiting text
+        // Not connected to server
         if (!joining) {
           
+          // Render content
           render_background(pGame);
           draw_text(pGame->pTitleSmallText);
           draw_text(pGame->pTitleBigText);
 
+          // Which content to highlight
           if (text_index == 0) {
             draw_text(pGame->pStartText);
             draw_text(pGame->pQuitDark);
@@ -193,54 +197,69 @@ void run(Game *pGame) {
           draw_text(pGame->pWaitingText);
         }
 
-        // Update screen with new render
+        // Update screen
         SDL_RenderPresent(pGame->pRenderer);
 
-        // Looking if there is an input
+        // Input
         if (SDL_PollEvent(&event)) {
 
           // Close window
           if (event.type == SDL_QUIT) closeRequest = 1;
 
-          // Arrow Up
-          if (event.type == SDL_KEYDOWN && event.key.keysym.scancode == SDL_SCANCODE_UP) text_index -= 1;
-          if (text_index < 0) text_index = 0;
-          // Arrow Down
-          if (event.type == SDL_KEYDOWN && event.key.keysym.scancode == SDL_SCANCODE_DOWN) text_index += 1;
-          if (text_index > 1) text_index = 1;
-          
-          if (!joining && event.type == SDL_KEYDOWN && event.key.keysym.scancode == SDL_SCANCODE_SPACE) {
-
-            // START GAME
-            if (text_index == 0) {
-              init_conn(pGame);
-
-              // Change client data and copy to packet (Space is pressed)
-              joining = 1;
-              cData.command = READY;
-              cData.snkeNumber = -1;
-              memcpy(pGame->pPacket->data, &cData, sizeof(ClientData));
-		          pGame->pPacket->len = sizeof(ClientData);
-              
+          if (!joining && event.type == SDL_KEYDOWN) {
+            // Arrow Up
+            if (event.key.keysym.scancode == SDL_SCANCODE_UP) {
+              text_index -= 1;
+              if (text_index < 0) text_index = 0;
             }
 
-            // QUIT
-            if (text_index == 1) {
-              closeRequest = 1;
+            // Arrow Down
+            if (event.key.keysym.scancode == SDL_SCANCODE_DOWN) {
+              text_index += 1;
+              if (text_index > 1) text_index = 1;
+            }
+
+            // Select index
+            if (event.key.keysym.scancode == SDL_SCANCODE_SPACE) {
+              // START GAME
+              if (text_index == 0) {
+
+                input_text_handler(pGame); // Enter playerName and ipAddr
+                conn_server(pGame);    // Connect to server with ipAddr
+
+                // Store ClientData (cData) to packet
+                send = 1;
+                joining = 1;
+                cData.command = READY;
+                cData.snkeNumber = -1;
+                strcpy(cData.playerName, pGame->playerName);
+                memcpy(pGame->pPacket->data, &cData, sizeof(ClientData));
+	              pGame->pPacket->len = sizeof(ClientData);
+              
+              }
+
+              // QUIT
+              if (text_index == 1) {
+                closeRequest = 1;
+              }
+
             }
 
           }
+
         }
 
-        // Send client data packet
-        if (joining) {
+        // Send data
+        if (send) {
           if ( !SDLNet_UDP_Send(pGame->pSocket, -1, pGame->pPacket) ) {
             printf("Error (UDP_Send): %s", SDLNet_GetError());
           }
+          send = 0;
         }
 
         // Update new recived data
         if (SDLNet_UDP_Recv(pGame->pSocket, pGame->pPacket)) {
+          printf("Got new data...\n");
           update_server_data(pGame);
           if (pGame->state == RUNNING) joining = 0;
         }
@@ -252,14 +271,7 @@ void run(Game *pGame) {
 
   }
 
-  // When player has closed window or left the game
-  cData.command = DISC;
-  memcpy(pGame->pPacket->data, &cData, sizeof(ClientData));
-	pGame->pPacket->len = sizeof(ClientData);
-
-  if ( !SDLNet_UDP_Send(pGame->pSocket, -1, pGame->pPacket) ) {
-    printf("Error (UDP_Send): %s", SDLNet_GetError());
-  }
+  disconnect_fromGame(pGame);
 
 }
 
@@ -293,91 +305,181 @@ void input_handler(Game *pGame, SDL_Event *pEvent) {
 
 }
 
-/**
-*  Establish a client to server connection.
-*  Text prompt to enter IP address.
-*  \param pSocket Open a UDP network socket.
-*  \param pPacket Allocate/resize/free a single UDP packet.
+/* 
+*  Text handler to be able to type input to window with SDL_StartTextInput()
+*  It returns two values, ipAddr and playerName, to struct Game (pGame)
 */
-int init_conn(Game *pGame) {
+int input_text_handler(Game *pGame) {
 
   // Enable text input handling
   SDL_StartTextInput();
 
-  char mess[30] = "Enter a server IP address";
+  SDL_Event event;
+  ClientData cData;
+
+  // Input mananger
+  int input_index = 0;
+
+  char messAddress[30] = "Enter a server IP address";
+  char messPlayerName[30] = "Enter player name";
+
+  char clientName[INPUT_BUFFER_SIZE] = "";
+  int clientName_pos = 0;
   char ipAddr[INPUT_BUFFER_SIZE] = "";
-  int input_cursor_position = 0;
+  int ipAddr_pos = 0;
 
   int closeRequest = 1;
   while (closeRequest) {
-    SDL_Event event;
+
     while (SDL_PollEvent(&event)) {
+
       switch (event.type) {
         case SDL_QUIT:
           closeRequest = 0;
         break;
         case SDL_TEXTINPUT:
-          if (input_cursor_position < 15) {
-            strcat(ipAddr, event.text.text);
-            input_cursor_position += strlen(event.text.text);
+          // Enter Player Name
+          if (input_index == 0) {
+            if (clientName_pos < INPUT_BUFFER_SIZE) {
+              strcat(clientName, event.text.text);
+              clientName_pos += strlen(event.text.text);
+            }
+          }
+
+          // Enter Ip Address
+          if (input_index == 1) {
+            if (ipAddr_pos < 15) {
+              strcat(ipAddr, event.text.text);
+              ipAddr_pos += strlen(event.text.text);
+            }
           }
         break;
         case SDL_KEYDOWN:
+          // Confirm input
           if (event.key.keysym.sym == SDLK_RETURN) closeRequest = 0;
-          if (event.key.keysym.sym == SDLK_BACKSPACE && input_cursor_position > 0) {
-            ipAddr[input_cursor_position - 1] = '\0';
-            input_cursor_position--;
+
+          // Change between ipAddr (0) and clientName (1)
+          if (event.key.keysym.sym == SDLK_UP) {
+            input_index -= 1;
+            if (input_index < 0) input_index = 0;
+          }
+
+          if (event.key.keysym.sym == SDLK_DOWN) {
+            input_index += 1;
+            if (input_index > 1) input_index = 1;
+          }
+
+          // Erase input depening on which input_index
+          if (input_index == 0) {
+            if (event.key.keysym.sym == SDLK_BACKSPACE && clientName_pos > 0) {
+              clientName[clientName_pos - 1] = '\0';
+              clientName_pos--;
+            }
+          }
+
+          if (input_index == 1) {
+            if (event.key.keysym.sym == SDLK_BACKSPACE && ipAddr_pos > 0) {
+              ipAddr[ipAddr_pos - 1] = '\0';
+              ipAddr_pos--;
+            }
           }
         break;
       }
+
     }
 
-    // Clear the screen
-    SDL_SetRenderDrawColor(pGame->pRenderer, 0, 0, 0, 255);
-    SDL_RenderClear(pGame->pRenderer);
+    // Render background
+    render_background(pGame);
 
-    // Render the input field
-    SDL_Rect input_rect = { 
-      WINDOW_WIDTH / 2 - 100, // Rectangle x cord
-      WINDOW_HEIGHT / 2 - 25, // Rectangle y cord
-      200,                    // Height of the rectangle
-      50                      // Width of the rectangle
+    // Rect input field (ipAddr/clientName)
+    SDL_Rect ipAddr_rect = { 
+      WINDOW_WIDTH / 2 - 150,   // Rectangle x cord
+      WINDOW_HEIGHT / 2 + 50,   // Rectangle y cord
+      300,                      // Width of the rectangle
+      50                        // Height of the rectangle
     };
 
-    SDL_Rect text_rect = { 
-      WINDOW_WIDTH / 2 - 100, // Rectangle x cord
-      WINDOW_HEIGHT / 2 - 25, // Rectangle y cord
-      200,                    // Height of the rectangle
-      50                      // Width of the rectangle
+    SDL_Rect clientName_rect = { 
+      WINDOW_WIDTH / 2 - 150,   // Rectangle x cord
+      WINDOW_HEIGHT / 2 - 120,  // Rectangle y cord
+      300,                      // Width of the rectangle
+      50                        // Height of the rectangle
+    };
+
+    // Rect message field (ipAddr/clientName)
+    SDL_Rect messIpAddr_rect = { 
+      300,                      // Rectangle x cord
+      250,                      // Rectangle y cord
+      300,                      // Width of the rectangle
+      70                        // Height of the rectangle
+    };
+
+    SDL_Rect messClientName_rect = { 
+      300,                      // Rectangle x cord
+      75,                       // Rectangle y cord
+      300,                      // Width of the rectangle
+      80                        // Height of the rectangle
     };
 
     SDL_SetRenderDrawColor(pGame->pRenderer, 255, 255, 255, 255);
-    SDL_RenderDrawRect(pGame->pRenderer, &input_rect);
+    SDL_RenderDrawRect(pGame->pRenderer, &ipAddr_rect);
+    SDL_RenderDrawRect(pGame->pRenderer, &clientName_rect);
         
-    SDL_Rect input_text_rect = { 
-      input_rect.x + 15,        // Rectangle x cord
-      input_rect.y + 15,        // Rectangle y cord
-      input_rect.w - 30,         // Height of the rectangle
-      input_rect.h - 30         // Width of the rectangle
+    // Input rect (ipAddr/clientName)
+    SDL_Rect input_ipAddr_rect = { 
+      ipAddr_rect.x + 15,
+      ipAddr_rect.y + 15,
+      ipAddr_rect.w - 30,
+      ipAddr_rect.h - 30
     };
 
-    SDL_Rect message = { 
-      text_rect.x = 300,        // Rectangle x cord
-      text_rect.y = 150,        // Rectangle y cord
-      text_rect.w = 300,        // Height of the rectangle
-      text_rect.h = 100         // Width of the rectangle
+    SDL_Rect input_clientName_rect = { 
+      clientName_rect.x + 15,
+      clientName_rect.y + 15,
+      clientName_rect.w - 30,
+      clientName_rect.h - 30
     };
 
+    // Colors (light, dark)
     SDL_Color text_color = { 
       255, 255, 255, 255 
     };
 
-    SDL_Surface* input_text_surface = TTF_RenderText_Solid(pGame->pNetFont, ipAddr, text_color);
-    SDL_Surface* message_surface = TTF_RenderText_Solid(pGame->pNetFont, mess, text_color);
-    SDL_Texture* input_text_texture = SDL_CreateTextureFromSurface(pGame->pRenderer, input_text_surface);
-    SDL_Texture* message_texture = SDL_CreateTextureFromSurface(pGame->pRenderer, message_surface);
-    SDL_RenderCopy(pGame->pRenderer, input_text_texture, NULL, &input_text_rect);
-    SDL_RenderCopy(pGame->pRenderer, message_texture, NULL, &message);
+    SDL_Color dark_text_color = { 
+      153, 153, 153, 255 
+    };
+
+    // Highlight the chosen input_index
+    if (input_index == 0) {
+      SDL_Surface* client_surface = TTF_RenderText_Solid(pGame->pNetFont, clientName, text_color);
+      SDL_Surface* message_clientName_surface = TTF_RenderText_Solid(pGame->pNetFont, messPlayerName, text_color);
+      SDL_Texture* client_texture = SDL_CreateTextureFromSurface(pGame->pRenderer, client_surface);
+      SDL_Texture* message_clientName_texture = SDL_CreateTextureFromSurface(pGame->pRenderer, message_clientName_surface);
+      SDL_Surface* ipAddr_surface = TTF_RenderText_Solid(pGame->pNetFont, ipAddr, dark_text_color);
+      SDL_Surface* message_ipAddr_surface = TTF_RenderText_Solid(pGame->pNetFont, messAddress, dark_text_color);
+      SDL_Texture* ipAddr_texture = SDL_CreateTextureFromSurface(pGame->pRenderer, ipAddr_surface);
+      SDL_Texture* message_ipAddr_texture = SDL_CreateTextureFromSurface(pGame->pRenderer, message_ipAddr_surface);
+      SDL_RenderCopy(pGame->pRenderer, client_texture, NULL, &input_clientName_rect);
+      SDL_RenderCopy(pGame->pRenderer, message_clientName_texture, NULL, &messClientName_rect);
+      SDL_RenderCopy(pGame->pRenderer, ipAddr_texture, NULL, &input_ipAddr_rect);
+      SDL_RenderCopy(pGame->pRenderer, message_ipAddr_texture, NULL, &messIpAddr_rect);
+    }
+
+    if (input_index == 1) {
+      SDL_Surface* client_surface = TTF_RenderText_Solid(pGame->pNetFont, clientName, dark_text_color);
+      SDL_Surface* message_clientName_surface = TTF_RenderText_Solid(pGame->pNetFont, messPlayerName, dark_text_color);
+      SDL_Texture* client_texture = SDL_CreateTextureFromSurface(pGame->pRenderer, client_surface);
+      SDL_Texture* message_clientName_texture = SDL_CreateTextureFromSurface(pGame->pRenderer, message_clientName_surface);
+      SDL_Surface* ipAddr_surface = TTF_RenderText_Solid(pGame->pNetFont, ipAddr, text_color);
+      SDL_Surface* message_ipAddr_surface = TTF_RenderText_Solid(pGame->pNetFont, messAddress, text_color);
+      SDL_Texture* ipAddr_texture = SDL_CreateTextureFromSurface(pGame->pRenderer, ipAddr_surface);
+      SDL_Texture* message_ipAddr_texture = SDL_CreateTextureFromSurface(pGame->pRenderer, message_ipAddr_surface);
+      SDL_RenderCopy(pGame->pRenderer, client_texture, NULL, &input_clientName_rect);
+      SDL_RenderCopy(pGame->pRenderer, message_clientName_texture, NULL, &messClientName_rect);
+      SDL_RenderCopy(pGame->pRenderer, ipAddr_texture, NULL, &input_ipAddr_rect);
+      SDL_RenderCopy(pGame->pRenderer, message_ipAddr_texture, NULL, &messIpAddr_rect);
+    }
+
     SDL_RenderPresent(pGame->pRenderer);
 
   }
@@ -387,14 +489,29 @@ int init_conn(Game *pGame) {
   SDL_SetRenderDrawColor(pGame->pRenderer, 0, 0, 0, 255);
   SDL_RenderClear(pGame->pRenderer);
 
-  // Establish client to server
+  // Copy string to pGame for future use
+  strcpy(pGame->ipAddr, ipAddr);
+  strcpy(pGame->playerName, clientName);
+
+  return 1;
+
+}
+
+/**
+*  Establish a client to server connection.
+*  Text prompt to enter IP address.
+*  \param pSocket Open a UDP network socket.
+*  \param pPacket Allocate/resize/free a single UDP packet.
+*/
+int conn_server(Game *pGame) {
+
   if ( !(pGame->pSocket = SDLNet_UDP_Open(0)) ) {
     printf("SDLNet_UDP_Open: %s\n", SDLNet_GetError());
     return 0;
   }
 
-  if (SDLNet_ResolveHost(&(pGame->serverAdd), ipAddr, 2000)) {
-    printf("SDLNet_ResolveHost (%s: 2000): %s\n", ipAddr, SDLNet_GetError());
+  if (SDLNet_ResolveHost(&(pGame->serverAdd), pGame->ipAddr, 2000)) {
+    printf("SDLNet_ResolveHost (%s: 2000): %s\n", pGame->ipAddr, SDLNet_GetError());
     return 0;
   }
 
@@ -406,11 +523,24 @@ int init_conn(Game *pGame) {
   pGame->pPacket->address.host = pGame->serverAdd.host;
   pGame->pPacket->address.port = pGame->serverAdd.port;
 
-  return 1;
+}
+
+/* When player has closed window or left the game */
+int disconnect_fromGame(Game *pGame) {
+  
+  ClientData cData;
+
+  cData.command = DISC;
+  memcpy(pGame->pPacket->data, &cData, sizeof(ClientData));
+	pGame->pPacket->len = sizeof(ClientData);
+
+  if ( !SDLNet_UDP_Send(pGame->pSocket, -1, pGame->pPacket) ) {
+    printf("Error (UDP_Send): %s", SDLNet_GetError());
+  }
 
 }
 
-/* Copy new data to server data and updates snake data */
+/* Copy new data to struct (ServerData) and update snake */
 void update_server_data(Game *pGame) {
 
     ServerData srvData;
@@ -425,7 +555,7 @@ void update_server_data(Game *pGame) {
 }
 
 /* 
-*  Create all snakes (players) in an array.
+*  Create all snakes (players) in the array.
 *  Checking for errors.
 */
 int init_allSnakes(Game *pGame) {
@@ -443,12 +573,12 @@ int init_allSnakes(Game *pGame) {
 
 }
 
-/* Render and presents a snake to the window */
+/* Render a snake (player) to the window */
 void render_snake(Game *pGame) {
 
-  SDL_SetRenderDrawColor(pGame->pRenderer,0,0,0,255);
+  SDL_SetRenderDrawColor(pGame->pRenderer, 0, 0, 0, 255);       // Black
   SDL_RenderClear(pGame->pRenderer);
-  SDL_SetRenderDrawColor(pGame->pRenderer,230,230,230,255);
+  SDL_SetRenderDrawColor(pGame->pRenderer, 230, 230, 230, 255); // White-ish
 
   for (int i = 0; i < MAX_SNKES; i++) {
     draw_snake(pGame->pSnke[i]);
@@ -459,17 +589,31 @@ void render_snake(Game *pGame) {
 
 }
 
-//Render background for the game
+/* Render a background for the game */
 void render_background(Game *pGame) {
-  SDL_SetRenderDrawColor(pGame->pRenderer, 9, 66, 100, 255);
+
+  SDL_SetRenderDrawColor(pGame->pRenderer, 9, 66, 100, 255); // Dark Blue
   SDL_RenderClear(pGame->pRenderer);
-  SDL_SetRenderDrawColor(pGame->pRenderer, 7, 52, 80, 255);
+  SDL_SetRenderDrawColor(pGame->pRenderer, 7, 52, 80, 255);  // Darker color then the previous
+
   for (int i = 0; i <= WINDOW_WIDTH; i += 10) {
     for(int j = 0; j <= WINDOW_HEIGHT; j += 10) {
       SDL_Rect pointRect = { i - POINT_SIZE / 2, j - POINT_SIZE / 2, POINT_SIZE, POINT_SIZE };
-      SDL_RenderFillRect(pGame->pRenderer, &pointRect);
+      SDL_RenderFillRect(pGame->pRenderer, &pointRect);      // Creates a small rect
     }
   }
+
+}
+
+/* Check error with every text pointer and close game if error is true */
+int text_getError(Game *pGame) {
+
+  if (!pGame->pStartText || !pGame->pStartDark || !pGame->pWaitingText || !pGame->pTitleBigText || !pGame->pTitleSmallText || !pGame->pQuitText || !pGame->pQuitDark) {
+    printf("Error: %s\n", SDL_GetError());
+    close(pGame);
+    return 0;
+  }
+
 }
 
 /* Destoryes various SDL libraries and snakes. Safe way when exiting game. */
