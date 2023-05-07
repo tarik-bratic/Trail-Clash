@@ -7,6 +7,7 @@
 #include <SDL2/SDL_net.h>
 #include <SDL2/SDL_timer.h>
 #include <SDL2/SDL_image.h>
+#include <SDL2/SDL_mixer.h>
 #include "../lib/include/data.h"
 #include "../lib/include/text.h"
 #include "../lib/include/init.h"
@@ -40,6 +41,9 @@ typedef struct game {
 
   //TIMER
   int startTime;
+
+   Mix_Music *menuSong, *playSong; 
+   Mix_Chunk *hitItem;
 
   GameState state;
 
@@ -101,7 +105,19 @@ int init_structure(Game *pGame) {
     return 0;
   }
 
-  init_allSnakes(pGame);
+  //Initializes audios/sounds & checks for error
+  Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048);
+  pGame->menuSong = Mix_LoadMUS("../lib/resources/main_menu.mp3"); // ta bort
+  pGame->playSong = Mix_LoadMUS("../lib/resources/play_game10.mp3");
+  pGame->hitItem = Mix_LoadWAV("../lib/resources/boostUp20.wav");
+  /* if(!pGame->menuSong || !pGame->playSong || !pGame->hitItem)
+  {
+    printf("Error: %s\n", SDL_GetError());
+    close(pGame);
+    return 0;
+  } */
+
+ init_allSnakes(pGame);
 
  init_Items(pGame);
 
@@ -119,6 +135,8 @@ int init_structure(Game *pGame) {
   }
 
   return 1;
+
+  Mix_PlayMusic(pGame->menuSong, 0); 
 
 }
 
@@ -138,8 +156,10 @@ void run(Game *pGame) {
     switch (pGame->state) {
       // The game is running
       case RUNNING:
+      /*  BEHÖVER JAG????
+        Mix_HaltMusic();
+        Mix_PlayMusic(pGame->playSong, 0);*/
         send_gameData(pGame);
-        
         // Update new recived data to client data
         while(SDLNet_UDP_Recv(pGame->pSocket, pGame->pPacket) == 1) {
           memcpy(&cData, pGame->pPacket->data, sizeof(ClientData));
@@ -332,6 +352,11 @@ void close(Game *pGame) {
   if (pGame->pPacket) SDLNet_FreePacket(pGame->pPacket);
 
 	if (pGame->pSocket) SDLNet_UDP_Close(pGame->pSocket);
+
+   Mix_FreeMusic(pGame->menuSong); 
+   Mix_FreeMusic(pGame->playSong);
+   Mix_FreeChunk(pGame->hitItem);
+   Mix_CloseAudio();
 
   SDLNet_Quit();
   TTF_Quit(); 

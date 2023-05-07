@@ -6,6 +6,7 @@
 #include <SDL2/SDL_net.h>
 #include <SDL2/SDL_timer.h>
 #include <SDL2/SDL_image.h>
+#include <SDL2/SDL_mixer.h>
 #include "../lib/include/data.h"
 #include "../lib/include/text.h"
 #include "../lib/include/snake.h"
@@ -38,6 +39,9 @@ typedef struct game
 
   // TIMER
   int startTime;
+
+   Mix_Music *menuSong, *playSong; 
+   Mix_Chunk *hitItem;
 
   GameState state;
 
@@ -113,6 +117,19 @@ int init_structure(Game *pGame)
   pGame->pWaitingText = create_text(pGame->pRenderer, 238, 168, 65, pGame->pStrdFont,
                                     "Waiting for server ...", WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 + 100);
 
+
+  //Initializes audios/sounds & checks for error
+  Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048);
+  pGame->menuSong = Mix_LoadMUS("../lib/resources/main_menu.mp3"); // ta bort
+  pGame->playSong = Mix_LoadMUS("../lib/resources/play_game10.mp3");
+  pGame->hitItem = Mix_LoadWAV("../lib/resources/boostUp20.wav");
+  /* if(!pGame->menuSong || !pGame->playSong || !pGame->hitItem)
+  {
+    printf("Error: %s\n", SDL_GetError());
+    close(pGame);
+    return 0;
+  } */
+
   // Checking if there is an error regarding the Text pointer.
   if (!pGame->pStartText || !pGame->pWaitingText || !pGame->pTitleText)
   {
@@ -126,6 +143,8 @@ int init_structure(Game *pGame)
   init_conn(pGame);
 
   init_Items(pGame); // seems to be working now?
+
+  Mix_PlayMusic(pGame->menuSong, 0); 
 
   return 1;
 }
@@ -244,6 +263,8 @@ void run(Game *pGame)
         if (!joining && event.type == SDL_KEYDOWN && event.key.keysym.scancode == SDL_SCANCODE_SPACE)
         {
           // Change client data and copy to packet (Space is pressed)
+          Mix_HaltMusic();
+           Mix_PlayMusic(pGame->playSong, 0);
           joining = 1;
           cData.command = READY;
           cData.snkeNumber = -1;
@@ -548,6 +569,9 @@ void close(Game *pGame)
   if (pGame->pStartText)
     destroy_text(pGame->pStartText);
 
+  if (pGame->pQuitText)
+    destroy_text(pGame->pQuitText);
+
   if (pGame->pTitleFont)
     TTF_CloseFont(pGame->pTitleFont);
 
@@ -556,6 +580,11 @@ void close(Game *pGame)
 
   if (pGame->pNetFont)
     TTF_CloseFont(pGame->pNetFont);
+
+   Mix_FreeMusic(pGame->menuSong); 
+   Mix_FreeMusic(pGame->playSong);
+   Mix_FreeChunk(pGame->hitItem);
+   Mix_CloseAudio();
 
   SDLNet_Quit();
   TTF_Quit();

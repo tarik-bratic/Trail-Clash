@@ -10,7 +10,7 @@ ifneq ($(OS), Windows_NT)
 endif
 
 INCLUDE = C:\msys64\mingw64\include
-LDFLAGS = -lSDL2main -lSDL2 -lSDL2_image -lSDL2_ttf -lSDL2_net -lm
+LDFLAGS = -lSDL2main -lSDL2 -lSDL2_image -lSDL2_ttf -lSDL2_net -lSDL2_mixer -lm
 LDFLAGS_WINDOWS := -lmingw32 
 LDFLAGS_MAC := -L /opt/homebrew/lib
 
