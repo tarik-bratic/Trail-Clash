@@ -15,8 +15,6 @@
 /* Server Game struct (Snake, UI, Network) */
 typedef struct game {
 
-  int collided;
-
   // SNAKE
   SDL_Window *pWindow;
   SDL_Renderer *pRenderer;
@@ -48,9 +46,6 @@ void render_snake(Game *pGame);
 void send_gameData(Game *pGame);
 void execute_command(Game *pGame, ClientData cData);
 void add_client(IPaddress address, IPaddress clients[], int *pNumOfClients);
-void reset_game(Game *pGame);
-void collision_counter(Game *pGame);
-
 
 int main(int argv, char** args) {
   
@@ -142,7 +137,7 @@ void run(Game *pGame) {
           if (event.type == SDL_QUIT) closeRequest = 1;
         }
 
-        // Update snake cord 
+        // Update snake cord and bullet cord
         for(int i = 0; i < MAX_SNKES; i++) {
           // Create an array of pointers to other snakes
           Snake *otherSnakes[MAX_SNKES - 1];
@@ -159,10 +154,6 @@ void run(Game *pGame) {
 
         // Render snake to the window
         render_snake(pGame);
-        collision_counter(pGame);
-        if(pGame->collided==1){
-          reset_game(pGame);
-        }
       break;
       // Waiting for all players
       case START:
@@ -281,25 +272,6 @@ void render_snake(Game *pGame) {
 
   SDL_RenderPresent(pGame->pRenderer);
 
-}
-
-void collision_counter(Game *pGame){
-  int nrOfCollisions=0;
-  for(int i=0;i<MAX_SNKES;i++){
-    if(pGame->pSnke[i]->snakeCollided==1)nrOfCollisions++;
-  }
-  if(nrOfCollisions==MAX_SNKES-1)pGame->collided=1;
-}
-
-void reset_game(Game *pGame){
-  
-  for (int i = 0; i < MAX_SNKES; i++){
-    reset_snake(pGame->pSnke[i]);
-  }
-  pGame->collided=0;
-  SDL_SetRenderDrawColor(pGame->pRenderer, 0, 0, 0, 255);
-  SDL_RenderClear(pGame->pRenderer);
-  pGame->state=START;
 }
 
 /* Destoryes various SDL libraries and snakes. Safe way when exiting game. */

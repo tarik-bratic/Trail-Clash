@@ -16,12 +16,12 @@ char *snakeColors[] = {
 };
 
 SDL_Color trailColors[] = {{255, 0, 0, 255},{0, 0, 255, 255},{0, 255, 0, 255},{255, 255, 0, 255}};
-  
+
 /* Function to create a snake with attributes with default values */
 Snake *create_snake(int number, SDL_Renderer *pRenderer, int wind_Width, int wind_Height, int color) {
 
   Snake *pSnke = malloc(sizeof(struct snake));
-  srand(time(NULL));
+
   // Set default values
   pSnke->angle = 0;
   pSnke->trailLength = 0;
@@ -135,29 +135,25 @@ void update_snake(Snake *pSnke, Snake **otherSnakes, int nrOfSnakes) {
     // Check if snake goes beyond left or right wall
     if (pSnke->xCord < 0) {
       pSnke->xCord = 0;
-      pSnke->snakeCollided = 1;
     } else if (pSnke->xCord > pSnke->wind_Width - pSnke->snkeRect.w) {
       pSnke->xCord = pSnke->wind_Width - pSnke->snkeRect.w;
-      pSnke->snakeCollided = 1;
     }
 
     // Check if snake goes beyond top or bottom wall
     if (pSnke->yCord < 0) {
       pSnke->yCord = 0;
-      pSnke->snakeCollided = 1;
     } else if (pSnke->yCord > pSnke->wind_Height - pSnke->snkeRect.h) {
       pSnke->yCord = pSnke->wind_Height - pSnke->snkeRect.h;
-      pSnke->snakeCollided = 1;
     }
 
     // Set new cordinates
     pSnke->snkeRect.x = pSnke->xCord;
     pSnke->snkeRect.y = pSnke->yCord;
 
-    // Increment the trail counter
+    // Increases the gapTrailCounter
     pSnke->gapTrailCounter++;
 
-    // Check if it's time to switch the spawning state of trail points
+    // Checking to see if it should start spawning trail points again
     if (pSnke->spawnTrailPoints && pSnke->gapTrailCounter >= rand() % 100 + 100) {
       pSnke->spawnTrailPoints = 0;
       pSnke->gapTrailCounter = 0;
@@ -175,7 +171,9 @@ void update_snake(Snake *pSnke, Snake **otherSnakes, int nrOfSnakes) {
       pSnke->trailPoints[pSnke->trailLength].h = pSnke->snkeRect.h;
       pSnke->trailLength++;
     }
+
   }
+
 }
 
 /* Reset the snake to default values */
@@ -185,15 +183,6 @@ void reset_snake(Snake *pSnke) {
   pSnke->angle=0;
   pSnke->xVel=pSnke->yVel=0;
   pSnke->alive = 1;
-  pSnke->trailLength=0;
-  pSnke->trailCounter=0;
-  pSnke->snakeCollided=0;
-  for(int i=0;i<MAX_TRAIL_POINTS;i++){
-    pSnke->trailPoints[i].x=0;
-    pSnke->trailPoints[i].y=0;
-    pSnke->trailPoints[i].w=0;
-    pSnke->trailPoints[i].h=0;
-  }
 }
 
 /* Render a copy of a snake */
@@ -202,10 +191,10 @@ void draw_snake(Snake *pSnke) {
     &(pSnke->snkeRect), pSnke->angle, NULL, SDL_FLIP_NONE);
 }
 
-
 /* Render the trail behind the player */
 void draw_trail(Snake *pSnke) {
   SDL_SetRenderDrawColor(pSnke->pRenderer, trailColors[pSnke->color].r, trailColors[pSnke->color].g, trailColors[pSnke->color].b, trailColors[pSnke->color].a);
+
   for (int i = 0; i < pSnke->trailLength; i++) {
     SDL_RenderFillRect(pSnke->pRenderer, &pSnke->trailPoints[i]);
   }
