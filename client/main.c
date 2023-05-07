@@ -615,6 +615,7 @@ void reset_game(Game *pGame) {
   SDL_SetRenderDrawColor(pGame->pRenderer, 0, 0, 0, 255);
   SDL_RenderClear(pGame->pRenderer);
   pGame->state = START;
+  
 }
 
 /* Render a background for the game */

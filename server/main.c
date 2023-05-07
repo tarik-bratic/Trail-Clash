@@ -306,6 +306,7 @@ void reset_game(Game *pGame) {
   SDL_SetRenderDrawColor(pGame->pRenderer, 0, 0, 0, 255);
   SDL_RenderClear(pGame->pRenderer);
   pGame->state = START;
+  pGame->num_of_clients=0;
 }
 
 /* Destoryes various SDL libraries and snakes. Safe way when exiting game. */
