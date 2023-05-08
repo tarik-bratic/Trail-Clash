@@ -35,7 +35,7 @@ typedef struct game {
 
   // SOUND & AUDIO
   Mix_Music *menuSong, *playSong; 
-  Mix_Chunk *hitItem;
+  Mix_Chunk *hitItem, *choiceSound, *clickButton;
 
   GameState state;
 
@@ -128,6 +128,8 @@ int init_structure(Game *pGame) {
   pGame->menuSong = Mix_LoadMUS("../lib/resources/main_menu.mp3"); // ta bort
   pGame->playSong = Mix_LoadMUS("../lib/resources/play_game10.mp3");
   pGame->hitItem = Mix_LoadWAV("../lib/resources/boostUp20.wav");
+  pGame->choiceSound = Mix_LoadWAV("../lib/resources/choiceSound.wav");
+  pGame->clickButton = Mix_LoadWAV("../lib/resources/clickButton.wav");
   /* if(!pGame->menuSong || !pGame->playSong || !pGame->hitItem)
   {
     printf("Error: %s\n", SDL_GetError());
@@ -224,14 +226,24 @@ void run(Game *pGame) {
           if (event.type == SDL_QUIT) closeRequest = 1;
 
           // Arrow Up
-          if (event.type == SDL_KEYDOWN && event.key.keysym.scancode == SDL_SCANCODE_UP) text_index -= 1;
+          if (event.type == SDL_KEYDOWN && event.key.keysym.scancode == SDL_SCANCODE_UP){
+             text_index -= 1;
+             Mix_PlayChannel(-1, pGame->choiceSound, 0);
+          }
           if (text_index < 0) text_index = 0;
+
           // Arrow Down
-          if (event.type == SDL_KEYDOWN && event.key.keysym.scancode == SDL_SCANCODE_DOWN) text_index += 1;
+          if (event.type == SDL_KEYDOWN && event.key.keysym.scancode == SDL_SCANCODE_DOWN){ 
+            text_index += 1;
+            Mix_PlayChannel(-1, pGame->choiceSound, 0);
+          }
           if (text_index > 1) text_index = 1;
           
           if (!joining && event.type == SDL_KEYDOWN && event.key.keysym.scancode == SDL_SCANCODE_SPACE) {
-
+            
+            //Play Click Sound
+            Mix_PlayChannel(-1,pGame->clickButton, 0);
+            
             // START GAME
             if (text_index == 0) {
               init_conn(pGame);
@@ -532,6 +544,8 @@ void close(Game *pGame) {
   Mix_FreeMusic(pGame->menuSong); 
   Mix_FreeMusic(pGame->playSong);
   Mix_FreeChunk(pGame->hitItem);
+  Mix_FreeChunk(pGame->choiceSound);
+  Mix_FreeChunk(pGame->clickButton);
   Mix_CloseAudio();
 
   SDLNet_Quit();
