@@ -109,6 +109,8 @@ int init_structure(Game *pGame) {
   // Create all snakes
   init_allSnakes(pGame);
 
+  init_Items(pGame); 
+
   // Establish server to client 
   if ( !(pGame->pSocket = SDLNet_UDP_Open(UDP_SERVER_PORT)) ) {
     printf("SDLNet_UDP_Open: %s\n", SDLNet_GetError());
@@ -203,7 +205,7 @@ void run(Game *pGame) {
         render_snake(pGame);
 
         //Check if one Snake left, if so reset game and display winner (filip)
-        collision_counter(pGame);
+        // collision_counter(pGame);
         if (pGame->collided==1) reset_game(pGame);
       break;
       // Waiting for all clients

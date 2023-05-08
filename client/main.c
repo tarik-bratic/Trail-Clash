@@ -33,7 +33,7 @@ typedef struct game {
 
   // UI
   TTF_Font *pStrdFont, *pTitleBigFont, *pTitleSmallFont, *pNetFont;
-  Text *pTitleBigText, *pTitleSmallText, *pStartText, *pStartDark, *pWaitingText, *pQuitText, *pQuitDark, *pListPlayers;
+  Text *pInGameTitle, *pTitleBigText, *pTitleSmallText, *pStartText, *pStartDark, *pWaitingText, *pQuitText, *pQuitDark, *pListPlayers;
 
   // NETWORK
   UDPsocket pSocket;
@@ -46,6 +46,13 @@ typedef struct game {
 
 } Game;
 
+// Temporary struct for testing leaderboard
+typedef struct {
+  char playerName[20];
+  int playerScore;
+} Player;
+//
+
 int init_Items(Game *pGame);
 int conn_server(Game *pGame);
 int text_getError(Game *pGame);
@@ -54,6 +61,7 @@ int init_allSnakes(Game *pGame);
 int input_text_handler(Game *pGame);
 int disconnect_fromGame(Game *pGame);
 int spawnItem(Game *pGame, int nrOfItems);
+void draw_interface(Game* pGame);
 
 void run(Game *pGame);
 void close(Game *pGame);
@@ -640,6 +648,95 @@ int init_allSnakes(Game *pGame) {
 
 }
 
+void draw_interface(Game* pGame) {
+
+  // Temporary assigned names and score (test)
+  Player players[4] = {
+    {"Player 1", 7},
+    {"Player 2", 10},
+    {"Player 3", 3},
+    {"Player 4", 13}
+  };
+
+  float xCord = pGame->pSnke[0]->xCord;
+
+  // Sorting the player with highest score first
+  int i, j;
+  Player temp;
+  for (i = 0; i < 4 - 1; i++) {
+    for (j = 0; j < 4 - i - 1; j++) {
+      if (players[j].playerScore < players[j+1].playerScore) {
+        temp = players[j];
+        players[j] = players[j+1];
+        players[j+1] = temp;
+      }
+    }
+  }
+
+  // Render the playing field
+  SDL_Rect input_walls = {
+    WINDOW_WIDTH * 0.25,    // Rectangle x cord
+    WINDOW_HEIGHT * 0.02,   // Rectangle y cord
+    WINDOW_WIDTH * 0.74,    // Width of the rectangle
+    WINDOW_HEIGHT * 0.95    // Width of the rectangle
+  };
+
+  SDL_SetRenderDrawColor(pGame->pRenderer, 255, 255, 255, 255);
+  SDL_RenderFillRect(pGame->pRenderer, &input_walls);
+
+  SDL_Rect input_rect = {
+    WINDOW_WIDTH * 0.255,   // Rectangle x cord
+    WINDOW_HEIGHT * 0.03,   // Rectangle y cord
+    WINDOW_WIDTH * 0.73,    // Width of the rectangle
+    WINDOW_HEIGHT * 0.935   // Width of the rectangle
+  };
+
+  SDL_SetRenderDrawColor(pGame->pRenderer, 40, 40, 40, 255);
+  SDL_RenderFillRect(pGame->pRenderer, &input_rect);
+
+
+  // Render the leaderboard
+  for(int i=0;i<4;i++){
+    SDL_Color White = {255, 255, 255};
+    char scoreStr[10];
+    sprintf(scoreStr, "%d", players[i].playerScore);
+
+    SDL_Surface* surfaceNumber =
+    TTF_RenderText_Solid(pGame->pStrdFont, scoreStr, White);
+
+    SDL_Texture* Number = SDL_CreateTextureFromSurface(pGame->pRenderer, surfaceNumber);
+    
+    SDL_Rect Number_rect; 
+    Number_rect.x = 250;  
+    Number_rect.y = 40 + 60 * i; 
+    Number_rect.w = 40; 
+    Number_rect.h = 50; 
+
+    SDL_RenderCopy(pGame->pRenderer, Number, NULL, &Number_rect);
+
+    SDL_Surface* surfaceMessage =
+    TTF_RenderText_Solid(pGame->pStrdFont, players[i].playerName, White);
+
+    SDL_Texture* Message = SDL_CreateTextureFromSurface(pGame->pRenderer, surfaceMessage);
+
+    SDL_Rect Message_rect;
+    Message_rect.x = 100;  
+    Message_rect.y = 40 + 60 * i; 
+    Message_rect.w = 130; 
+    Message_rect.h = 50; 
+
+    SDL_RenderCopy(pGame->pRenderer, Message, NULL, &Message_rect);
+
+
+    SDL_FreeSurface(surfaceNumber);
+    SDL_DestroyTexture(Number);
+    SDL_FreeSurface(surfaceMessage);
+    SDL_DestroyTexture(Message);
+  }
+  draw_text(pGame->pInGameTitle);
+}
+
+
 /* Render a snake (player) to the window */
 void render_snake(Game *pGame) {
 
@@ -651,6 +748,7 @@ void render_snake(Game *pGame) {
     drawItem(pGame->pItems[i]);
 
   for (int i = 0; i < MAX_SNKES; i++) {
+    // draw_interface(pGame);
     draw_snake(pGame->pSnke[i]);
     draw_trail(pGame->pSnke[i]);
   }
@@ -736,6 +834,8 @@ void close(Game *pGame) {
   if(pGame->pTitleBigText) destroy_text(pGame->pTitleBigText); 
 
   if(pGame->pTitleSmallText) destroy_text(pGame->pTitleSmallText); 
+
+  if(pGame->pInGameTitle) destroy_text(pGame->pInGameTitle);
 
   if(pGame->pStartText) destroy_text(pGame->pStartText);  
 
