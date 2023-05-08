@@ -6,10 +6,12 @@
 #include <SDL2/SDL_net.h>
 #include <SDL2/SDL_timer.h>
 #include <SDL2/SDL_image.h>
+#include <SDL2/SDL_mixer.h>
 #include "../lib/include/data.h"
 #include "../lib/include/text.h"
 #include "../lib/include/snake.h"
 #include "../lib/include/init.h"
+#include "../lib/include/item.h"
 
 /* Client Game struct */
 typedef struct game {
@@ -21,6 +23,14 @@ typedef struct game {
   int num_of_snkes;
   int snkeID;
   int collided;
+
+  // SOUND & AUDIO
+  Mix_Music *menuSong, *playSong; 
+  Mix_Chunk *hitItem;
+
+  // ITEM
+  ItemImage *pItemImage[MAX_ITEMS];
+  Item *pItems[MAX_ITEMS];
 
   // UI
   TTF_Font *pStrdFont, *pTitleBigFont, *pTitleSmallFont, *pNetFont;
@@ -37,12 +47,14 @@ typedef struct game {
 
 } Game;
 
+int init_Items(Game *pGame);
 int conn_server(Game *pGame);
 int text_getError(Game *pGame);
 int init_structure(Game *pGame);
 int init_allSnakes(Game *pGame);
 int input_text_handler(Game *pGame);
 int disconnect_fromGame(Game *pGame);
+int spawnItem(Game *pGame, int nrOfItems);
 
 void run(Game *pGame);
 void close(Game *pGame);
@@ -119,6 +131,19 @@ int init_structure(Game *pGame) {
   // Checking if there is an error regarding all the Text pointer.
   text_getError(pGame);
 
+  //Initializes audios/sounds & checks for error
+  Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048);
+  pGame->menuSong = Mix_LoadMUS("../lib/resources/main_menu.mp3"); // ta bort
+  pGame->playSong = Mix_LoadMUS("../lib/resources/play_game10.mp3");
+  pGame->hitItem = Mix_LoadWAV("../lib/resources/boostUp20.wav");
+  if(!pGame->menuSong || !pGame->playSong || !pGame->hitItem) {
+    printf("Error: %s\n", SDL_GetError());
+    close(pGame);
+    return 0;
+  }
+
+  init_Items(pGame); // seems to be working now?
+
   // Create all snakes
   init_allSnakes(pGame);
 
@@ -131,10 +156,12 @@ void run(Game *pGame) {
 
   SDL_Event event;
   ClientData cData;
-  ServerData sData;
   int joining = 0;
   int send = 0;
   int text_index = 0;
+  int boostKey = 0;
+  int nrOfItems = 0;
+  int replace;
 
   int closeRequest = 0;
   while(!closeRequest) {
@@ -142,6 +169,7 @@ void run(Game *pGame) {
     switch (pGame->state) {
       // The game is running
       case RUNNING:
+        //Mix_PlayMusic(pGame->playSong, 0);
         // Update new recived data
         while(SDLNet_UDP_Recv(pGame->pSocket, pGame->pPacket)) {
           update_server_data(pGame);
@@ -153,6 +181,18 @@ void run(Game *pGame) {
             closeRequest = 1;
           }
           else input_handler(pGame, &event);
+        }
+
+        nrOfItems = spawnItem(pGame, nrOfItems);
+
+        for (int i = 0; i < MAX_ITEMS; i++) {
+          if (collideSnake(pGame->pSnke[i], getRectItem(pGame->pItems[i]))) {
+            /*boostKey = 1;
+            pGame->startTime = 0;*/
+            updateItem(pGame->pItems[i]);
+            nrOfItems--;
+            replace = i;
+          }
         }
 
         // Create an array of pointers to other snakes
@@ -167,7 +207,7 @@ void run(Game *pGame) {
           }
   
           // Update snake cord, send data
-          update_snake(pGame->pSnke[i], otherSnakes, MAX_SNKES - 1);
+          update_snake(pGame->pSnke[i], otherSnakes, MAX_SNKES - 1, boostKey);
 
         }
         
@@ -180,6 +220,7 @@ void run(Game *pGame) {
       break;
       // Main Menu
       case START:
+        //Mix_PlayMusic(pGame->menuSong, 0);
         // Not connected to server
         if (!joining) {
           
@@ -280,6 +321,27 @@ void run(Game *pGame) {
 
   disconnect_fromGame(pGame);
 
+}
+
+int init_Items(Game *pGame) {
+  // creates Items and creates their image
+
+  SDL_SetRenderDrawColor(pGame->pRenderer, 0, 0, 0, 255);
+  SDL_RenderClear(pGame->pRenderer);
+  SDL_SetRenderDrawColor(pGame->pRenderer, 230, 230, 230, 255);
+
+  for (int i = 0; i < MAX_ITEMS; i++) {
+    pGame->pItemImage[i] = createItemImage(pGame->pRenderer);
+    pGame->pItems[i] = createItem(pGame->pItemImage[i], WINDOW_WIDTH, WINDOW_HEIGHT, 0, 500, 500);
+  }
+
+  for (int i = 0; i < MAX_ITEMS; i++) {
+    if (!pGame->pItemImage[i] || !pGame->pItems[i]) {
+      printf("Error: %s", SDL_GetError());
+      close(pGame);
+      return 0;
+    }
+  }
 }
 
 /* Manage various inputs (keypress, mouse) */
@@ -587,6 +649,9 @@ void render_snake(Game *pGame) {
   SDL_RenderClear(pGame->pRenderer);
   SDL_SetRenderDrawColor(pGame->pRenderer, 230, 230, 230, 255); // White-ish
 
+  for (int i = 0; i < MAX_ITEMS; i++)
+    drawItem(pGame->pItems[i]);
+
   for (int i = 0; i < MAX_SNKES; i++) {
     draw_snake(pGame->pSnke[i]);
     draw_trail(pGame->pSnke[i]);
@@ -594,6 +659,20 @@ void render_snake(Game *pGame) {
 
   SDL_RenderPresent(pGame->pRenderer);
 
+}
+
+int spawnItem(Game *pGame, int NrOfItems) {
+  int spawn = rand() % 50;
+  if (spawn == 0) {
+    if (NrOfItems == MAX_ITEMS) {
+    }
+    else {
+      pGame->pItemImage[NrOfItems] = createItemImage(pGame->pRenderer);
+      pGame->pItems[NrOfItems] = createItem(pGame->pItemImage[NrOfItems], WINDOW_WIDTH, WINDOW_HEIGHT, 0, 500, 500);
+      NrOfItems++;
+    }
+  }
+  return NrOfItems;
 }
 
 //Checks nrOfCollisions, if 1 snake alive sets collided to 1 (filip)
@@ -675,6 +754,11 @@ void close(Game *pGame) {
   if(pGame->pStrdFont) TTF_CloseFont(pGame->pStrdFont);
 
   if(pGame->pNetFont) TTF_CloseFont(pGame->pNetFont);
+
+  Mix_FreeMusic(pGame->menuSong); 
+  Mix_FreeMusic(pGame->playSong);
+  Mix_FreeChunk(pGame->hitItem);
+  Mix_CloseAudio();
 
   SDLNet_Quit();
   TTF_Quit(); 
