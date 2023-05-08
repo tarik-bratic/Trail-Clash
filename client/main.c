@@ -25,8 +25,7 @@ typedef struct game {
   int collided;
 
   // SOUND & AUDIO
-  Mix_Music *menuSong, *playSong; 
-  Mix_Chunk *hitItem;
+  Mix_Music *menuSong, *playSong;
 
   // ITEM
   ItemImage *pItemImage[MAX_ITEMS];
@@ -135,8 +134,7 @@ int init_structure(Game *pGame) {
   Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048);
   pGame->menuSong = Mix_LoadMUS("../lib/resources/main_menu.mp3"); // ta bort
   pGame->playSong = Mix_LoadMUS("../lib/resources/play_game10.mp3");
-  pGame->hitItem = Mix_LoadWAV("../lib/resources/boostUp20.wav");
-  if(!pGame->menuSong || !pGame->playSong || !pGame->hitItem) {
+  if(!pGame->menuSong || !pGame->playSong) {
     printf("Error: %s\n", SDL_GetError());
     close(pGame);
     return 0;
@@ -215,7 +213,7 @@ void run(Game *pGame) {
         render_snake(pGame);
 
         //Check if one Snake left, if so reset game and display winner (filip)
-        collision_counter(pGame);
+        //collision_counter(pGame);
         if (pGame->collided==1) reset_game(pGame);
       break;
       // Main Menu
@@ -757,7 +755,6 @@ void close(Game *pGame) {
 
   Mix_FreeMusic(pGame->menuSong); 
   Mix_FreeMusic(pGame->playSong);
-  Mix_FreeChunk(pGame->hitItem);
   Mix_CloseAudio();
 
   SDLNet_Quit();

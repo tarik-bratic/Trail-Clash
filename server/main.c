@@ -414,6 +414,10 @@ void close(Game *pGame) {
 
 	if (pGame->pSocket) SDLNet_UDP_Close(pGame->pSocket);
 
+  Mix_FreeMusic(pGame->menuSong); 
+  Mix_FreeMusic(pGame->playSong);
+  Mix_CloseAudio();
+
   SDLNet_Quit();
   TTF_Quit(); 
   SDL_Quit();
