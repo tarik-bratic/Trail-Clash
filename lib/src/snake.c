@@ -94,7 +94,7 @@ void check_and_handle_collision(Snake *pSnke, Snake **otherSnakes, int nrOfSnake
 }
 
 /* Update and set new cords and look if player is not outside of the screen */
-void update_snake(Snake *pSnke, Snake **otherSnakes, int nrOfSnakes) {
+void update_snake(Snake *pSnke, Snake **otherSnakes, int nrOfSnakes, int key) {
 
   // Changes distance between snake and trail
   float trail_offset = 8;
