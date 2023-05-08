@@ -11,6 +11,8 @@
 #include "../lib/include/snake.h"
 #include "../lib/include/init.h"
 
+#define HEJADIL 3
+
 /* Client Game struct (Snake, UI, Network) */
 typedef struct game {
 
