@@ -1,6 +1,4 @@
 #include <math.h>
-#include <time.h>
-#include <stdlib.h>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 #include "../include/data.h"
@@ -27,7 +25,7 @@ Snake *create_snake(int number, SDL_Renderer *pRenderer, int wind_Width, int win
   pSnke->trailLength = 0;
   pSnke->trailCounter = 0;
   pSnke->gapTrailCounter = 0;
-  pSnke->gapDuration = 0;
+  pSnke->gapDuration = 200;
   pSnke->spawnTrailPoints = 1;
   pSnke->xVel = pSnke->yVel = 0;
   pSnke->wind_Width = wind_Width;
@@ -149,20 +147,19 @@ void update_snake(Snake *pSnke, Snake **otherSnakes, int nrOfSnakes) {
     // Set new cordinates
     pSnke->snkeRect.x = pSnke->xCord;
     pSnke->snkeRect.y = pSnke->yCord;
-
-    // Increases the gapTrailCounter
+    
     pSnke->gapTrailCounter++;
-
-    // Checking to see if it should start spawning trail points again
-    if (pSnke->spawnTrailPoints && pSnke->gapTrailCounter >= rand() % 100 + 100) {
+    // Check if it's time to create a new gap
+    if (pSnke->spawnTrailPoints && pSnke->gapTrailCounter >= pSnke->gapDuration) {
       pSnke->spawnTrailPoints = 0;
       pSnke->gapTrailCounter = 0;
-      pSnke->gapDuration = rand() % 10 + 10;
+      pSnke->gapDuration = 30;
     } else if (!pSnke->spawnTrailPoints && pSnke->gapTrailCounter >= pSnke->gapDuration) {
       pSnke->spawnTrailPoints = 1;
       pSnke->gapTrailCounter = 0;
+      pSnke->gapDuration = 200;
     }
-
+              
     // Add new trail points if spawnTrailPoints is true
     if (pSnke->spawnTrailPoints && pSnke->trailLength < MAX_TRAIL_POINTS) {
       pSnke->trailPoints[pSnke->trailLength].x = prev_xCord - pSnke->snkeRect.w / 2 - pSnke->xVel * trail_offset;
