@@ -7,10 +7,12 @@
 #include <SDL2/SDL_net.h>
 #include <SDL2/SDL_timer.h>
 #include <SDL2/SDL_image.h>
+#include <SDL2/SDL_mixer.h>
 #include "../lib/include/data.h"
 #include "../lib/include/text.h"
 #include "../lib/include/init.h"
 #include "../lib/include/snake.h"
+#include "../lib/include/item.h"
 
 /* Server Game struct */
 typedef struct game {
@@ -29,12 +31,24 @@ typedef struct game {
   ServerData sData;
   int num_of_clients;
 
+  //ITEM
+  ItemImage *pItemImage[MAX_ITEMS];
+  Item *pItems[MAX_ITEMS];
+  int numItems;
+
+  //TIMER
+  int startTime;
+
+  Mix_Music *menuSong, *playSong;
+
   GameState state;
 
 } Game;
 
 int init_structure(Game *pGame);
 int init_allSnakes(Game *pGame);
+int init_Items(Game *pGame);
+int spawnItem(Game *pGame, int NrOfItems);
 
 void run(Game *pGame);
 void close(Game *pGame);
@@ -71,6 +85,7 @@ int init_structure(Game *pGame) {
   pGame->num_of_clients = 0;
   pGame->num_of_snkes = MAX_SNKES;
   pGame->sData.maxConnPlayers = MAX_SNKES;
+  pGame->numItems = MAX_ITEMS;
 
   if ( !init_sdl_libraries() ) return 0; 
 
@@ -79,6 +94,17 @@ int init_structure(Game *pGame) {
 
   pGame->pRenderer = create_render(pGame->pRenderer, pGame->pWindow);
   if ( !pGame->pRenderer) close(pGame);
+
+  //Initializes audios/sounds & checks for error
+  Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048);
+  pGame->menuSong = Mix_LoadMUS("../lib/resources/main_menu.mp3"); // ta bort
+  pGame->playSong = Mix_LoadMUS("../lib/resources/play_game10.mp3");
+  if(!pGame->menuSong || !pGame->playSong)
+  {
+    printf("Error: %s\n", SDL_GetError());
+    close(pGame);
+    return 0;
+  }
 
   // Create all snakes
   init_allSnakes(pGame);
@@ -106,6 +132,9 @@ void run(Game *pGame) {
   SDL_Event event;
   ClientData cData;
   int showMess = 0;
+  int boostKey = 0;
+  int nrOfItems = 0;
+  int replace;
 
   int closeRequest = 0;
   while(!closeRequest) {
@@ -113,6 +142,7 @@ void run(Game *pGame) {
     switch (pGame->state) {
       // The game is running
       case RUNNING:
+        //Mix_PlayMusic(pGame->playSong, 0);
         // Show message
         if (showMess) {
           printf("Game state: Running\n");
@@ -145,9 +175,27 @@ void run(Game *pGame) {
           for (int j = 0; j < MAX_SNKES; j++) {
             if (j != i) otherSnakes[otherSnakesIndex++] = pGame->pSnke[j];
           }
+
+          nrOfItems = spawnItem(pGame, nrOfItems);
   
           // Update snake cord
-          update_snake(pGame->pSnke[i], otherSnakes, MAX_SNKES - 1);
+          update_snake(pGame->pSnke[i], otherSnakes, MAX_SNKES - 1, boostKey);
+
+          for(int i=0;i<MAX_ITEMS;i++) {
+            if(collideSnake(pGame->pSnke[i],getRectItem(pGame->pItems[i]))) {
+              boostKey = 1;
+              pGame->startTime = 0;
+              updateItem(pGame->pItems[i]);
+              nrOfItems--;
+              replace = i;
+            }
+            if(boostKey>0) {
+              pGame->startTime++;
+              if(pGame->startTime==200) {
+                boostKey=0;
+              }
+            }
+          }
 
         }
 
@@ -187,6 +235,50 @@ void run(Game *pGame) {
 
   }
 
+}
+
+int init_Items(Game *pGame) {
+   // creates Items and creates their image
+   SDL_SetRenderDrawColor(pGame->pRenderer,0,0,0,255);
+  SDL_RenderClear(pGame->pRenderer);
+  SDL_SetRenderDrawColor(pGame->pRenderer,230,230,230,255);
+
+  for (int i = 0; i < MAX_ITEMS; i++)
+  {
+    /*int xcoords = rand()%850;
+    int ycoords = rand()%510;*/
+    pGame->pItemImage[i] = createItemImage(pGame->pRenderer);
+    pGame->pItems[i] = createItem(pGame->pItemImage[i], WINDOW_WIDTH, WINDOW_HEIGHT, 0, 500, 500);
+  }
+
+  for (int i = 0; i < MAX_ITEMS; i++)
+  {
+    if (!pGame->pItemImage[i] || !pGame->pItems[i])
+    {
+      printf("Error: %s", SDL_GetError());
+      close(pGame);
+      return 0;
+    }
+    }
+}
+
+int spawnItem(Game *pGame, int NrOfItems)
+{
+  int spawn = rand() % 500;
+    if(spawn == 0)
+    {
+      if(NrOfItems==MAX_ITEMS)
+      {}
+      else
+      {
+        /*int xcoords = rand()%850;
+        int ycoords = rand()%510;*/
+        pGame->pItemImage[NrOfItems] = createItemImage(pGame->pRenderer);
+        pGame->pItems[NrOfItems] = createItem(pGame->pItemImage[NrOfItems],WINDOW_WIDTH,WINDOW_HEIGHT, 0, 500, 500); 
+        NrOfItems++;
+      }
+    }
+    return NrOfItems;
 }
 
 /* Setting up the game with default values and other attributes */
