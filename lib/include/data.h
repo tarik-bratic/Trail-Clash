@@ -78,4 +78,11 @@ struct snake {
 };
 typedef struct snake Snake;
 
+struct itemData {
+
+    int xcoords, ycoords;
+
+};
+typedef struct itemData ItemData;
+
 #endif
