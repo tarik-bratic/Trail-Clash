@@ -22,8 +22,8 @@ ifeq ($(CURRETN_OS), mac)
 	LDFLAGS := $(LDFLAGS_MAC) $(LDFLAGS)
 endif
 
-trailClashClient: main.o init.o text.o snake.o
-	gcc -o trailClashClient main.o init.o text.o snake.o $(LDFLAGS)
+trailClashClient: main.o init.o text.o snake.o item.o
+	gcc -o trailClashClient main.o init.o text.o snake.o item.o $(LDFLAGS)
 
 main.o: main.c
 	gcc -c main.c
@@ -36,6 +36,9 @@ text.o: ../lib/src/text.c ../lib/include/text.h
 
 init.o: ../lib/src/init.c ../lib/include/init.h 
 	gcc -c ../lib/src/init.c
+
+item.o: ../lib/src/item.c ../lib/include/item.h 
+	gcc -c ../lib/src/item.c
 
 clean:
 	rm *.o
