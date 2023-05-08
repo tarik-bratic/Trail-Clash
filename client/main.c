@@ -6,6 +6,7 @@
 #include <SDL2/SDL_net.h>
 #include <SDL2/SDL_timer.h>
 #include <SDL2/SDL_image.h>
+#include <SDL2/SDL_mixer.h>
 #include "../lib/include/data.h"
 #include "../lib/include/text.h"
 #include "../lib/include/snake.h"
@@ -31,6 +32,10 @@ typedef struct game {
   UDPsocket pSocket;
   UDPpacket *pPacket;
   IPaddress serverAdd;
+
+  // SOUND & AUDIO
+  Mix_Music *menuSong, *playSong; 
+  Mix_Chunk *hitItem;
 
   GameState state;
 
@@ -118,9 +123,23 @@ int init_structure(Game *pGame) {
     return 0;
   }
 
+  //Initializes audios/sounds & checks for error
+  Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048);
+  pGame->menuSong = Mix_LoadMUS("../lib/resources/main_menu.mp3"); // ta bort
+  pGame->playSong = Mix_LoadMUS("../lib/resources/play_game10.mp3");
+  pGame->hitItem = Mix_LoadWAV("../lib/resources/boostUp20.wav");
+  /* if(!pGame->menuSong || !pGame->playSong || !pGame->hitItem)
+  {
+    printf("Error: %s\n", SDL_GetError());
+    close(pGame);
+    return 0;
+  } */
+
   init_allSnakes(pGame);
 
   // init_conn(pGame);
+
+  Mix_PlayMusic(pGame->menuSong, 0); 
 
   return 1;
 
@@ -223,6 +242,10 @@ void run(Game *pGame) {
               cData.snkeNumber = -1;
               memcpy(pGame->pPacket->data, &cData, sizeof(ClientData));
 		          pGame->pPacket->len = sizeof(ClientData);
+
+            //Play Game-Music
+              Mix_HaltMusic();
+              Mix_PlayMusic(pGame->playSong, 0);
               
             }
 
@@ -505,6 +528,11 @@ void close(Game *pGame) {
   if(pGame->pStrdFont) TTF_CloseFont(pGame->pStrdFont);
 
   if(pGame->pNetFont) TTF_CloseFont(pGame->pNetFont);
+
+  Mix_FreeMusic(pGame->menuSong); 
+  Mix_FreeMusic(pGame->playSong);
+  Mix_FreeChunk(pGame->hitItem);
+  Mix_CloseAudio();
 
   SDLNet_Quit();
   TTF_Quit(); 
