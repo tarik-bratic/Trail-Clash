@@ -25,7 +25,7 @@ Snake *create_snake(int number, SDL_Renderer *pRenderer, int wind_Width, int win
   pSnke->trailLength = 0;
   pSnke->trailCounter = 0;
   pSnke->gapTrailCounter = 0;
-  pSnke->gapDuration = 200;
+  pSnke->gapDuration = 100;
   pSnke->spawnTrailPoints = 1;
   pSnke->xVel = pSnke->yVel = 0;
   pSnke->wind_Width = wind_Width;
@@ -170,7 +170,7 @@ void update_snake(Snake *pSnke, Snake **otherSnakes, int nrOfSnakes, int key) {
     } else if (!pSnke->spawnTrailPoints && pSnke->gapTrailCounter >= pSnke->gapDuration) {
       pSnke->spawnTrailPoints = 1;
       pSnke->gapTrailCounter = 0;
-      pSnke->gapDuration = 200;
+      pSnke->gapDuration = 100;
     }
               
     // Add new trail points if spawnTrailPoints is true
