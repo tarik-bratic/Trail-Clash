@@ -3,7 +3,7 @@
 
 /* CONST VERIABLES */
 #define PI 3.14
-#define MAX_SNKES 2
+#define MAX_SNKES 1
 #define POINT_SIZE 2
 #define DATA_SIZE 512
 #define UDP_SERVER_PORT 2000
