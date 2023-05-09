@@ -130,12 +130,12 @@ int init_structure(Game *pGame) {
   pGame->hitItem = Mix_LoadWAV("../lib/resources/boostUp20.wav");
   pGame->choiceSound = Mix_LoadWAV("../lib/resources/choiceSound.wav");
   pGame->clickButton = Mix_LoadWAV("../lib/resources/clickButton.wav");
-  /* if(!pGame->menuSong || !pGame->playSong || !pGame->hitItem)
+   if(!pGame->menuSong || !pGame->playSong || !pGame->hitItem || !pGame->choiceSound || !pGame->clickButton)
   {
     printf("Error: %s\n", SDL_GetError());
     close(pGame);
     return 0;
-  } */
+  } 
 
   init_allSnakes(pGame);
 
