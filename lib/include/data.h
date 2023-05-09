@@ -2,14 +2,13 @@
 #define data_h
 
 #define PI 3.14
-#define MAX_SNKES 2
+#define MAX_SNKES 4
 #define WINDOW_WIDTH 900
 #define WINDOW_HEIGHT 560
 #define ONE_MS 1000/60-15
 #define MAX_TRAIL_LENGTH 100
 #define INPUT_BUFFER_SIZE 128
 #define MAX_TRAIL_POINTS 100000000
-#define MAX_ITEMS 3
 
 enum gameState { START, RUNNING };
 typedef enum gameState GameState;

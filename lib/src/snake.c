@@ -67,12 +67,6 @@ Snake *create_snake(int number, SDL_Renderer *pRenderer, int wind_Width, int win
 
 }
 
-void accelerate(Snake *pSnke) {
-
-    pSnke->xCord += pSnke->xVel = 0.5 * sin(pSnke->angle * (2 * PI/360));
-    pSnke->yCord += pSnke->yVel = -(0.5 * cos(pSnke->angle * (2 * PI/360)));
-}
-
 /* Command to turn left */
 void turn_left(Snake *pSnke) {
     pSnke->angle -= 5.0;
@@ -117,7 +111,7 @@ void check_and_handle_collision(Snake *pSnke, Snake **otherSnakes, int nrOfSnake
 }
 
 /* Update and set new cords and look if player is not outside of the screen */
-void update_snake(Snake *pSnke, Snake **otherSnakes, int nrOfSnakes, int key) {
+void update_snake(Snake *pSnke, Snake **otherSnakes, int nrOfSnakes) {
 
   // Changes distance between snake and trail
   float trail_offset = 8;
@@ -133,10 +127,6 @@ void update_snake(Snake *pSnke, Snake **otherSnakes, int nrOfSnakes, int key) {
     pSnke->xCord += pSnke->xVel = 1.5 * sin(pSnke->angle * (2 * PI/360));
     pSnke->yCord += pSnke->yVel = -(1.5 * cos(pSnke->angle * (2 * PI/360)));
     
-    if(key==1){
-    pSnke->xCord += pSnke->xVel*3;
-    pSnke->yCord += pSnke->yVel*3;
-    }
     // Check for collision
     check_and_handle_collision(pSnke, otherSnakes, nrOfSnakes);
 
@@ -237,13 +227,4 @@ void update_recived_snake_data(Snake *pSnke, SnakeData *pSnkeData) {
     pSnke->snakeCollided = pSnkeData->snakeCollided;
     pSnke->trailCounter = pSnkeData->trailCounter;
     pSnke->trailLength = pSnkeData->trailLength;
-}
-
-int collideSnake(Snake *pSnake, SDL_Rect rect){
-    //return SDL_HasIntersection(&(pSnake->snkeRect),&rect);
-    return distance(pSnake->snkeRect.x+pSnake->snkeRect.w/2,pSnake->snkeRect.y+pSnake->snkeRect.h/2,rect.x+rect.w/2,rect.y+rect.h/2)<(pSnake->snkeRect.w+rect.w)/2;
-}
-
-static float distance(int x1, int y1, int x2, int y2){
-    return sqrt((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1));
 }
