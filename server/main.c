@@ -181,7 +181,7 @@ void run(Game *pGame) {
           //nrOfItems = spawnItem(pGame, nrOfItems);
   
           // Update snake cord
-          update_snake(pGame->pSnke[i], otherSnakes, MAX_SNKES - 1, boostKey);
+          //update_snake(pGame->pSnke[i], otherSnakes, MAX_SNKES - 1, boostKey);
 
           for(int j=0;j<MAX_ITEMS;j++) 
           {
@@ -199,6 +199,8 @@ void run(Game *pGame) {
               }
             }
           }
+          // Update snake cord
+          update_snake(pGame->pSnke[i], otherSnakes, MAX_SNKES - 1, boostKey);
         }
 
         nrOfItems = spawnItem(pGame, nrOfItems);

@@ -194,22 +194,6 @@ void run(Game *pGame) {
 
         nrOfItems = spawnItem(pGame, nrOfItems);
 
-        for (int i = 0; i < MAX_ITEMS; i++) {
-          if(collideSnake(pGame->pSnke[i],getRectItem(pGame->pItems[i]))) {
-              /*boostKey = 1;
-              pGame->startTime = 0;*/
-              updateItem(pGame->pItems[i]);
-              nrOfItems--;
-              replace = i;
-            }
-            /*if(boostKey>0) {
-              pGame->startTime++;
-              if(pGame->startTime==200) {
-                boostKey=0;
-              }
-            }*/
-        }
-
         // Create an array of pointers to other snakes
         for(int i = 0; i < MAX_SNKES; i++) {
 
@@ -220,6 +204,22 @@ void run(Game *pGame) {
           for (int j = 0; j < MAX_SNKES; j++) {
             if (j != i) otherSnakes[otherSnakesIndex++] = pGame->pSnke[j];
           }
+
+          for (int j = 0; j < MAX_ITEMS; j++) {
+          if(collideSnake(pGame->pSnke[i],getRectItem(pGame->pItems[j]))) {
+              /*boostKey = 1;
+              pGame->startTime = 0;*/
+              updateItem(pGame->pItems[j]);
+              nrOfItems--;
+              replace = j;
+            }
+            /*if(boostKey>0) {
+              pGame->startTime++;
+              if(pGame->startTime==200) {
+                boostKey=0;
+              }
+            }*/
+        }
   
           // Update snake cord, send data
           update_snake(pGame->pSnke[i], otherSnakes, MAX_SNKES - 1, boostKey);
@@ -767,7 +767,7 @@ void render_snake(Game *pGame) {
 }
 
 int spawnItem(Game *pGame, int NrOfItems) {
-  int spawn = rand() % 50;
+  int spawn = rand() % 500;
   if (spawn == 0) {
     if (NrOfItems == MAX_ITEMS) {
     }
