@@ -109,6 +109,8 @@ int init_structure(Game *pGame) {
   // Create all snakes
   init_allSnakes(pGame);
 
+  init_Items(pGame);
+
   // Establish server to client 
   if ( !(pGame->pSocket = SDLNet_UDP_Open(UDP_SERVER_PORT)) ) {
     printf("SDLNet_UDP_Open: %s\n", SDLNet_GetError());
@@ -176,18 +178,19 @@ void run(Game *pGame) {
             if (j != i) otherSnakes[otherSnakesIndex++] = pGame->pSnke[j];
           }
 
-          nrOfItems = spawnItem(pGame, nrOfItems);
+          //nrOfItems = spawnItem(pGame, nrOfItems);
   
           // Update snake cord
           update_snake(pGame->pSnke[i], otherSnakes, MAX_SNKES - 1, boostKey);
 
-          for(int i=0;i<MAX_ITEMS;i++) {
-            if(collideSnake(pGame->pSnke[i],getRectItem(pGame->pItems[i]))) {
+          for(int j=0;j<MAX_ITEMS;j++) 
+          {
+            if(collideSnake(pGame->pSnke[i],getRectItem(pGame->pItems[j]))) {
               boostKey = 1;
               pGame->startTime = 0;
-              updateItem(pGame->pItems[i]);
+              updateItem(pGame->pItems[j]);
               nrOfItems--;
-              replace = i;
+              replace = j;
             }
             if(boostKey>0) {
               pGame->startTime++;
@@ -196,14 +199,15 @@ void run(Game *pGame) {
               }
             }
           }
-
         }
+
+        nrOfItems = spawnItem(pGame, nrOfItems);
 
         // Render snake
         render_snake(pGame);
 
         //Check if one Snake left, if so reset game and display winner (filip)
-        collision_counter(pGame);
+        //collision_counter(pGame);
         if (pGame->collided==1) reset_game(pGame);
       break;
       // Waiting for all clients

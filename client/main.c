@@ -31,6 +31,9 @@ typedef struct game {
   ItemImage *pItemImage[MAX_ITEMS];
   Item *pItems[MAX_ITEMS];
 
+  // TIMER
+  int startTime;
+
   // UI
   TTF_Font *pStrdFont, *pTitleBigFont, *pTitleSmallFont, *pNetFont;
   Text *pTitleBigText, *pTitleSmallText, *pStartText, *pStartDark, *pWaitingText, *pQuitText, *pQuitDark, *pListPlayers;
@@ -184,13 +187,19 @@ void run(Game *pGame) {
         nrOfItems = spawnItem(pGame, nrOfItems);
 
         for (int i = 0; i < MAX_ITEMS; i++) {
-          if (collideSnake(pGame->pSnke[i], getRectItem(pGame->pItems[i]))) {
-            /*boostKey = 1;
-            pGame->startTime = 0;*/
-            updateItem(pGame->pItems[i]);
-            nrOfItems--;
-            replace = i;
-          }
+          if(collideSnake(pGame->pSnke[i],getRectItem(pGame->pItems[i]))) {
+              /*boostKey = 1;
+              pGame->startTime = 0;*/
+              updateItem(pGame->pItems[i]);
+              nrOfItems--;
+              replace = i;
+            }
+            /*if(boostKey>0) {
+              pGame->startTime++;
+              if(pGame->startTime==200) {
+                boostKey=0;
+              }
+            }*/
         }
 
         // Create an array of pointers to other snakes
