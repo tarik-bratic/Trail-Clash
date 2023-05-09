@@ -313,7 +313,7 @@ void run(Game *pGame) {
         }
 
         // Send data
-        if (send) {
+        if (!closeRequest && send) {
           if ( !SDLNet_UDP_Send(pGame->pSocket, -1, pGame->pPacket) ) {
             printf("Error (UDP_Send): %s", SDLNet_GetError());
           }
@@ -409,17 +409,16 @@ int input_text_handler(Game *pGame) {
 
   char clientName[INPUT_BUFFER_SIZE] = "";
   int clientName_pos = 0;
+
   char ipAddr[INPUT_BUFFER_SIZE] = "";
   int ipAddr_pos = 0;
 
-  int closeRequest = 1;
-  while (closeRequest) {
-
+  int closeRequest = 0;
+  while (!closeRequest) {
     while (SDL_PollEvent(&event)) {
-
       switch (event.type) {
         case SDL_QUIT:
-          closeRequest = 0;
+          closeRequest = 1;
         break;
         case SDL_TEXTINPUT:
           // Enter Player Name
@@ -440,9 +439,9 @@ int input_text_handler(Game *pGame) {
         break;
         case SDL_KEYDOWN:
           // Confirm input
-          if (event.key.keysym.sym == SDLK_RETURN) closeRequest = 0;
+          if (event.key.keysym.sym == SDLK_RETURN) closeRequest = 1;
 
-          // Change between ipAddr (0) and clientName (1)
+          // Change between clientName (0) and ipAddr (1)
           if (event.key.keysym.sym == SDLK_UP) {
             input_index -= 1;
             if (input_index < 0) input_index = 0;
@@ -469,7 +468,20 @@ int input_text_handler(Game *pGame) {
           }
         break;
       }
+    }
 
+    for (int i = 0, j = 0; i < 2; i++) {
+      if (clientName[i] != ' ') {
+        clientName[j] = clientName[i];
+        j++;
+      }
+    }
+
+    for (int i = 0, j = 0; i < 2; i++) {
+      if (ipAddr[i] != ' ') {
+        ipAddr[j] = ipAddr[i];
+        j++;
+      }
     }
 
     // Render background
@@ -615,6 +627,7 @@ int disconnect_fromGame(Game *pGame) {
   ClientData cData;
 
   cData.command = DISC;
+  strcpy(cData.playerName, pGame->playerName);
   memcpy(pGame->pPacket->data, &cData, sizeof(ClientData));
 	pGame->pPacket->len = sizeof(ClientData);
 

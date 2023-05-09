@@ -225,11 +225,13 @@ void run(Game *pGame) {
         if (SDLNet_UDP_Recv(pGame->pSocket, pGame->pPacket) == 1) {
 
           memcpy(&cData, pGame->pPacket->data, sizeof(ClientData));
-          printf("Client (%s) has joined...\n", cData.playerName);
+          if (cData.command != DISC) {
+            printf("Client (%s) has joined...\n", cData.playerName);
 
-          add_client(pGame->pPacket->address, pGame->clients, &(pGame->num_of_clients));
+            add_client(pGame->pPacket->address, pGame->clients, &(pGame->num_of_clients));
 
-          if (pGame->num_of_clients == MAX_SNKES) set_up_game(pGame);
+            if (pGame->num_of_clients == MAX_SNKES) set_up_game(pGame);
+          }
 
         }
       break;
@@ -343,6 +345,7 @@ void execute_command(Game *pGame, ClientData cData) {
         break;
       case DISC:
         pGame->sData.maxConnPlayers -= 1;
+        printf("Client (%s) has disconnected...\n", cData.playerName);
       break;
     }
 
