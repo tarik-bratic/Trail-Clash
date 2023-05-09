@@ -88,7 +88,7 @@ int check_collision_with_self(Snake *pSnke) {
 
   for (int i = 0; i < pSnke->trailLength; i++) {
     SDL_Rect *trailRect = &pSnke->trailPoints[i];
-    if (SDL_HasIntersection(&(pSnke->snkeRect), trailRect)) return 1;
+    if (SDL_HasIntersection(&(pSnke->hitbox), trailRect)) return 1;
   }
 
   return 0;
@@ -101,7 +101,7 @@ int check_collision_with_other_snakes(Snake *pSnke, Snake **otherSnakes, int nrO
     Snake *otherSnake = otherSnakes[s];
     for (int i = 0; i < otherSnake->trailLength; i++) {
       SDL_Rect *trailRect = &otherSnake->trailPoints[i];
-      if (SDL_HasIntersection(&(pSnke->snkeRect), trailRect)) return 1;
+      if (SDL_HasIntersection(&(pSnke->hitbox), trailRect)) return 1;
     }
   }
   return 0;
@@ -118,7 +118,7 @@ void check_and_handle_collision(Snake *pSnke, Snake **otherSnakes, int nrOfSnake
 void update_snake(Snake *pSnke, Snake **otherSnakes, int nrOfSnakes, int key) {
 
   // Changes distance between snake and trail
-  float trail_offset = 8;
+  float trail_offset = 4;
 
   // Collision has not happened, run code below
   if (!pSnke->snakeCollided) {
@@ -135,7 +135,13 @@ void update_snake(Snake *pSnke, Snake **otherSnakes, int nrOfSnakes, int key) {
       pSnke->xCord += pSnke->xVel*3;
       pSnke->yCord += pSnke->yVel*3;
     }
-    
+
+    // Update snake hitbox to cover only the front part of the head
+    pSnke->hitbox.x = pSnke->xCord + pSnke->snkeRect.w / 4;
+    pSnke->hitbox.y = pSnke->yCord + pSnke->snkeRect.h / 4;
+    pSnke->hitbox.w = pSnke->snkeRect.w / 2;
+    pSnke->hitbox.h = pSnke->snkeRect.h / 2;
+
     // Check for collision
     check_and_handle_collision(pSnke, otherSnakes, nrOfSnakes);
 
