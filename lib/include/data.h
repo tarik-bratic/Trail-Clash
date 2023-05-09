@@ -40,6 +40,7 @@ struct snakeData {
     int trailLength;
     int trailCounter;
     int snakeCollided;
+    int color;
 
 };
 typedef struct snakeData SnakeData; 
@@ -69,6 +70,11 @@ struct snake {
   int trailLength;
   int trailCounter;
   int snakeCollided;
+  int color;
+  int gapTrailCounter;     
+  int gapDuration;
+ 
+  int spawnTrailPoints;
   SDL_Rect trailPoints[MAX_TRAIL_POINTS];
 
   SDL_Renderer *pRenderer;

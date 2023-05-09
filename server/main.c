@@ -355,7 +355,7 @@ void execute_command(Game *pGame, ClientData cData) {
 int init_allSnakes(Game *pGame) {
 
   for (int i = 0; i < MAX_SNKES; i++)
-    pGame->pSnke[i] = create_snake(i, pGame->pRenderer, WINDOW_WIDTH, WINDOW_HEIGHT);
+    pGame->pSnke[i] = create_snake(i, pGame->pRenderer, WINDOW_WIDTH, WINDOW_HEIGHT, i);
 
   for (int i = 0; i < MAX_SNKES; i++) {
     if (!pGame->pSnke[i]) {
