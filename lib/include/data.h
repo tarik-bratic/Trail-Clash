@@ -3,7 +3,7 @@
 
 /* CONST VERIABLES */
 #define PI 3.14
-#define MAX_SNKES 1
+#define MAX_SNKES 2
 #define POINT_SIZE 2
 #define DATA_SIZE 512
 #define UDP_SERVER_PORT 2000
@@ -80,6 +80,8 @@ struct snake {
   SDL_Renderer *pRenderer;
   SDL_Texture *pTexture;
   SDL_Rect snkeRect;
+  SDL_Texture* pArrowTexture;
+  SDL_Rect arrowRect;
 
 };
 typedef struct snake Snake;

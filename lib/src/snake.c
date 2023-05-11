@@ -213,8 +213,10 @@ void reset_snake(Snake *pSnke) {
 
 /* Render a copy of a snake */
 void draw_snake(Snake *pSnke) {
+  if(!pSnke->snakeCollided){
   SDL_RenderCopyEx(pSnke->pRenderer, pSnke->pTexture, NULL,
     &(pSnke->snkeRect), pSnke->angle, NULL, SDL_FLIP_NONE);
+  }
 }
 
 /* Render the trail behind the player */
