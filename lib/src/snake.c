@@ -4,8 +4,19 @@
 #include "../include/data.h"
 #include "../include/snake.h"
 
+char *snakeColors[] = {
+  
+  "../lib/resources/redSquare.png",
+  "../lib/resources/blueSquare.png",
+  "../lib/resources/greenSquare.png",
+  "../lib/resources/yellowSquare.png",
+
+};
+
+SDL_Color trailColors[] = {{255, 0, 0, 255},{0, 0, 255, 255},{0, 255, 0, 255},{255, 255, 0, 255}};
+
 /* Create a snake with attributes */
-Snake *create_snake(int number, SDL_Renderer *pRenderer, int wind_Width, int wind_Height) {
+Snake *create_snake(int number, SDL_Renderer *pRenderer, int wind_Width, int wind_Height, int color) {
 
   Snake *pSnke = malloc(sizeof(struct snake));
 
@@ -13,12 +24,16 @@ Snake *create_snake(int number, SDL_Renderer *pRenderer, int wind_Width, int win
   pSnke->angle = 0;
   pSnke->trailLength = 0;
   pSnke->trailCounter = 0;
+  pSnke->gapTrailCounter = 0;
+  pSnke->gapDuration = 100;
+  pSnke->spawnTrailPoints = 1;
   pSnke->xVel = pSnke->yVel = 0;
   pSnke->wind_Width = wind_Width;
   pSnke->wind_Height = wind_Height;
+  pSnke->color = color;
 
   // Load desired image
-  SDL_Surface *pSurface = IMG_Load("../lib/resources/square.png");
+  SDL_Surface *pSurface = IMG_Load(snakeColors[color]);
   if (!pSurface) {
       printf("Error: %s\n", SDL_GetError());
       return NULL;
@@ -145,9 +160,21 @@ void update_snake(Snake *pSnke, Snake **otherSnakes, int nrOfSnakes, int key) {
     // Set new cordinates
     pSnke->snkeRect.x = pSnke->xCord;
     pSnke->snkeRect.y = pSnke->yCord;
-
-    // Add new trail points every frame with a small offset based on the snake's velocity
-    if (pSnke->trailLength < MAX_TRAIL_POINTS) {
+    
+    pSnke->gapTrailCounter++;
+    // Check if it's time to create a new gap
+    if (pSnke->spawnTrailPoints && pSnke->gapTrailCounter >= pSnke->gapDuration) {
+      pSnke->spawnTrailPoints = 0;
+      pSnke->gapTrailCounter = 0;
+      pSnke->gapDuration = 30;
+    } else if (!pSnke->spawnTrailPoints && pSnke->gapTrailCounter >= pSnke->gapDuration) {
+      pSnke->spawnTrailPoints = 1;
+      pSnke->gapTrailCounter = 0;
+      pSnke->gapDuration = 100;
+    }
+              
+    // Add new trail points if spawnTrailPoints is true
+    if (pSnke->spawnTrailPoints && pSnke->trailLength < MAX_TRAIL_POINTS) {
       pSnke->trailPoints[pSnke->trailLength].x = prev_xCord - pSnke->snkeRect.w / 2 - pSnke->xVel * trail_offset;
       pSnke->trailPoints[pSnke->trailLength].y = prev_yCord - pSnke->snkeRect.h / 2 - pSnke->yVel * trail_offset;
       pSnke->trailPoints[pSnke->trailLength].w = pSnke->snkeRect.w;
@@ -186,7 +213,7 @@ void draw_snake(Snake *pSnke) {
 
 /* Render the trail behind the player */
 void draw_trail(Snake *pSnke) {
-  SDL_SetRenderDrawColor(pSnke->pRenderer, 255, 0, 0, 255);
+  SDL_SetRenderDrawColor(pSnke->pRenderer, trailColors[pSnke->color].r, trailColors[pSnke->color].g, trailColors[pSnke->color].b, trailColors[pSnke->color].a);
 
   for (int i = 0; i < pSnke->trailLength; i++) {
     SDL_RenderFillRect(pSnke->pRenderer, &pSnke->trailPoints[i]);
