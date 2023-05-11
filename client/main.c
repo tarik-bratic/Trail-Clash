@@ -222,8 +222,9 @@ void run(Game *pGame) {
           }
   
           // Update snake cord, send data
-          update_snake(pGame->pSnke[i], otherSnakes, MAX_SNKES - 1, boostKey);
-
+          for (int j = 0; j < MAX_SNKES; j++)
+            pGame->pSnke[j] = update_snake(pGame->pSnke[i], otherSnakes, MAX_SNKES - 1, boostKey, j);
+          
         }
         
         // Render snake
