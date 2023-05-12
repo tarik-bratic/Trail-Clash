@@ -18,7 +18,7 @@ Snake *create_snake(int number, SDL_Renderer *pRenderer, int wind_Width, int win
   pSnke->wind_Height = wind_Height;
 
   // Load desired image
-  SDL_Surface *pSurface = IMG_Load("../lib/resources/square.png");
+  SDL_Surface *pSurface = IMG_Load("../lib/resources/square1.png");
   if (!pSurface) {
       printf("Error: %s\n", SDL_GetError());
       return NULL;

@@ -185,7 +185,7 @@ void run(Game *pGame) {
               otherSnakes[otherSnakesIndex++] = pGame->pSnke[j];
             }
           }
-  
+          
           update_snake(pGame->pSnke[i], otherSnakes, MAX_SNKES - 1);
         }
         
@@ -226,20 +226,25 @@ void run(Game *pGame) {
           if (event.type == SDL_QUIT) closeRequest = 1;
 
           // Arrow Up
-          if (event.type == SDL_KEYDOWN && event.key.keysym.scancode == SDL_SCANCODE_UP){
+          if (event.type == SDL_KEYDOWN && event.key.keysym.scancode == SDL_SCANCODE_UP 
+          || event.type == SDL_MOUSEMOTION && event.motion.y < WINDOW_HEIGHT / 2 + 70){
              text_index -= 1;
              Mix_PlayChannel(-1, pGame->choiceSound, 0);
+             if (text_index < 0) text_index = 0;
           }
-          if (text_index < 0) text_index = 0;
+          //if (text_index < 0) text_index = 0; //FLYTTADE DENNA INANNFÖR FUNKTIONEN (ADIL)
 
           // Arrow Down
-          if (event.type == SDL_KEYDOWN && event.key.keysym.scancode == SDL_SCANCODE_DOWN){ 
+          if (event.type == SDL_KEYDOWN && event.key.keysym.scancode == SDL_SCANCODE_DOWN 
+          || event.type == SDL_MOUSEMOTION && event.motion.y > WINDOW_HEIGHT / 2 + 70){ 
             text_index += 1;
             Mix_PlayChannel(-1, pGame->choiceSound, 0);
+            if (text_index > 1) text_index = 1;
           }
-          if (text_index > 1) text_index = 1;
+          //if (text_index > 1) text_index = 1; // FLYTTADE DENNA INNANFÖR FUNKTIONEN (ADIL)
           
-          if (!joining && event.type == SDL_KEYDOWN && event.key.keysym.scancode == SDL_SCANCODE_SPACE) {
+          if (!joining && event.type == SDL_KEYDOWN && event.key.keysym.scancode == SDL_SCANCODE_SPACE 
+          || event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT) {
             
             //Play Click Sound
             Mix_PlayChannel(-1,pGame->clickButton, 0);
