@@ -194,6 +194,7 @@ void run(Game *pGame) {
 
         }
 
+        // draw_interface(pGame);
         render_snake(pGame);
 
         //Check if one Snake left, if so reset game and display winner (filip)
