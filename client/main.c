@@ -343,7 +343,7 @@ void render_background(Game *pGame) {
 /* Render a snake (player) to the window */
 void render_snake(Game *pGame) {
 
-  SDL_SetRenderDrawColor(pGame->pRenderer, 0, 0, 0, 255);       // Black
+  SDL_SetRenderDrawColor(pGame->pRenderer, 0, 50, 100, 255);       // Black
   SDL_RenderClear(pGame->pRenderer);
   SDL_SetRenderDrawColor(pGame->pRenderer, 230, 230, 230, 255); // White-ish
 
@@ -351,7 +351,7 @@ void render_snake(Game *pGame) {
     drawItem(pGame->pItems[i]);
 
   for (int i = 0; i < MAX_SNKES; i++) {
-    // draw_interface(pGame);
+    draw_interface(pGame);
     draw_snake(pGame->pSnke[i]);
     draw_trail(pGame->pSnke[i]);
   }
@@ -811,7 +811,6 @@ void draw_interface(Game* pGame) {
     SDL_FreeSurface(surfaceMessage);
     SDL_DestroyTexture(Message);
   }
-  draw_text(pGame->pInGameTitle);
 }
 
 //Checks nrOfCollisions, if 1 snake alive sets collided to 1 (filip)
