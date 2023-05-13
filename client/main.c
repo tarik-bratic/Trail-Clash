@@ -347,13 +347,12 @@ void render_snake(Game *pGame) {
   SDL_RenderClear(pGame->pRenderer);
   SDL_SetRenderDrawColor(pGame->pRenderer, 230, 230, 230, 255); // White-ish
 
-  for (int i = 0; i < MAX_ITEMS; i++)
-    drawItem(pGame->pItems[i]);
 
   for (int i = 0; i < MAX_SNKES; i++) {
     draw_interface(pGame);
     draw_snake(pGame->pSnke[i]);
     draw_trail(pGame->pSnke[i]);
+    drawItem(pGame->pItems[i]);
   }
 
   SDL_RenderPresent(pGame->pRenderer);
@@ -736,7 +735,6 @@ void draw_interface(Game* pGame) {
     {"Player 4", 13}
   };
 
-  float xCord = pGame->pSnke[0]->xCord;
 
   // Sorting the player with highest score first
   int i, j;
@@ -754,9 +752,9 @@ void draw_interface(Game* pGame) {
   // Render the playing field
   SDL_Rect input_walls = {
     WINDOW_WIDTH * 0.25,    // Rectangle x cord
-    WINDOW_HEIGHT * 0.02,   // Rectangle y cord
-    WINDOW_WIDTH * 0.74,    // Width of the rectangle
-    WINDOW_HEIGHT * 0.95    // Width of the rectangle
+    0,   // Rectangle y cord
+    WINDOW_WIDTH * 0.75,    // Width of the rectangle
+    WINDOW_HEIGHT    // Width of the rectangle
   };
 
   SDL_SetRenderDrawColor(pGame->pRenderer, 255, 255, 255, 255);
@@ -764,9 +762,9 @@ void draw_interface(Game* pGame) {
 
   SDL_Rect input_rect = {
     WINDOW_WIDTH * 0.255,   // Rectangle x cord
-    WINDOW_HEIGHT * 0.03,   // Rectangle y cord
-    WINDOW_WIDTH * 0.73,    // Width of the rectangle
-    WINDOW_HEIGHT * 0.935   // Width of the rectangle
+    WINDOW_HEIGHT * 0.01,   // Rectangle y cord
+    WINDOW_WIDTH * 0.74,    // Width of the rectangle
+    WINDOW_HEIGHT * 0.98   // Width of the rectangle
   };
 
   SDL_SetRenderDrawColor(pGame->pRenderer, 40, 40, 40, 255);
@@ -785,10 +783,10 @@ void draw_interface(Game* pGame) {
     SDL_Texture* Number = SDL_CreateTextureFromSurface(pGame->pRenderer, surfaceNumber);
     
     SDL_Rect Number_rect; 
-    Number_rect.x = 250;  
-    Number_rect.y = 40 + 60 * i; 
-    Number_rect.w = 40; 
-    Number_rect.h = 50; 
+      Number_rect.x = WINDOW_WIDTH * 0.21;  
+      Number_rect.y = WINDOW_HEIGHT * 0.03 + 50 * i; 
+      Number_rect.w = WINDOW_WIDTH * 0.03; 
+      Number_rect.h = 50; 
 
     SDL_RenderCopy(pGame->pRenderer, Number, NULL, &Number_rect);
 
@@ -798,10 +796,10 @@ void draw_interface(Game* pGame) {
     SDL_Texture* Message = SDL_CreateTextureFromSurface(pGame->pRenderer, surfaceMessage);
 
     SDL_Rect Message_rect;
-    Message_rect.x = 100;  
-    Message_rect.y = 40 + 60 * i; 
-    Message_rect.w = 130; 
-    Message_rect.h = 50; 
+      Message_rect.x = WINDOW_WIDTH * 0.06;  
+      Message_rect.y = WINDOW_HEIGHT * 0.03 + 50 * i; 
+      Message_rect.w = WINDOW_WIDTH * 0.13 ; 
+      Message_rect.h = 50; 
 
     SDL_RenderCopy(pGame->pRenderer, Message, NULL, &Message_rect);
 
