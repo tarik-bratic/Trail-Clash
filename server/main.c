@@ -23,6 +23,8 @@ typedef struct game {
   Snake *pSnke[MAX_SNKES];
   int collided;
 
+  ClientName cName[MAX_SNKES];
+
   // NETWORK
   UDPsocket pSocket;
   UDPpacket *pPacket;
@@ -56,7 +58,7 @@ void set_up_game(Game *pGame);
 void render_snake(Game *pGame);
 void send_gameData(Game *pGame);
 void execute_command(Game *pGame, ClientData cData);
-void add_client(IPaddress address, IPaddress clients[], int *pNumOfClients);
+void add_client(Game *pGame, ClientName cName[], IPaddress address, IPaddress clients[], int *pNumOfClients);
 
 int main(int argv, char** args) {
   
@@ -198,10 +200,8 @@ void run(Game *pGame) {
         // If new data recived add client
         if (SDLNet_UDP_Recv(pGame->pSocket, pGame->pPacket) == 1) {
 
-          memcpy(&cData, pGame->pPacket->data, sizeof(ClientData));
           if (cData.command != DISC) {
-            printf("Client (%s) has joined...\n", cData.playerName);
-            add_client(pGame->pPacket->address, pGame->clients, &(pGame->connected_Clients));
+            add_client(pGame, pGame->cName, pGame->pPacket->address, pGame->clients, &(pGame->connected_Clients));
 
             if (pGame->connected_Clients == MAX_SNKES) set_up_game(pGame);
           }
@@ -237,6 +237,9 @@ void send_gameData(Game *pGame) {
     for (int i = 0; i < MAX_SNKES; i++) {
 
       pGame->sData.snkeNum = i;
+      for (int j = 0; j < MAX_SNKES; j++) {
+        strcpy(pGame->sData.playerName[j], pGame->cName[j].name);
+      }
       memcpy(pGame->pPacket->data, &(pGame->sData), sizeof(ServerData));
 		  pGame->pPacket->len = sizeof(ServerData);
       pGame->pPacket->address = pGame->clients[i];
@@ -250,13 +253,20 @@ void send_gameData(Game *pGame) {
 }
 
 /* Add new clients to the server if they joined */
-void add_client(IPaddress address, IPaddress clients[], int *pNumOfClients) {
+void add_client(Game *pGame, ClientName cName[], IPaddress address, IPaddress clients[], int *pNumOfClients) {
+
+  ClientData cData;
+
+  memcpy(&cData, pGame->pPacket->data, sizeof(ClientData));
 
 	for (int i = 0; i < *pNumOfClients; i++) 
     if(address.host == clients[i].host && address.port == clients[i].port) return;
 
 	clients[*pNumOfClients] = address;
+  strcpy(cName[*pNumOfClients].name, cData.playerName);
 	(*pNumOfClients)++;
+
+  printf("Client (%s) has joined...\n", cData.playerName);
 
 }
 
