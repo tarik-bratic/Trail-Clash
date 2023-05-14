@@ -774,11 +774,12 @@ void draw_interface(Game* pGame) {
   // Render the leaderboard
   for(int i=0;i<4;i++){
     SDL_Color White = {255, 255, 255};
+    SDL_Color Yellow = {255, 255, 102};
     char scoreStr[10];
     sprintf(scoreStr, "%d", players[i].playerScore);
 
     SDL_Surface* surfaceNumber =
-    TTF_RenderText_Solid(pGame->pStrdFont, scoreStr, White);
+    TTF_RenderText_Solid(pGame->pStrdFont, scoreStr, Yellow);
 
     SDL_Texture* Number = SDL_CreateTextureFromSurface(pGame->pRenderer, surfaceNumber);
     
@@ -803,12 +804,42 @@ void draw_interface(Game* pGame) {
 
     SDL_RenderCopy(pGame->pRenderer, Message, NULL, &Message_rect);
 
-
+    
     SDL_FreeSurface(surfaceNumber);
     SDL_DestroyTexture(Number);
     SDL_FreeSurface(surfaceMessage);
     SDL_DestroyTexture(Message);
+    
   }
+
+  SDL_Surface* gold = IMG_Load("../lib/resources/gold.png"); 
+  SDL_Texture* goldTexture = SDL_CreateTextureFromSurface(pGame->pRenderer, gold);
+  SDL_Rect destRect1 = {WINDOW_WIDTH * 0.005, WINDOW_HEIGHT * 0.03, WINDOW_HEIGHT / 14, WINDOW_HEIGHT / 14};
+  SDL_RenderCopy(pGame->pRenderer, goldTexture, NULL, &destRect1);
+
+  SDL_Surface* silver = IMG_Load("../lib/resources/silver.png");
+  SDL_Texture* silverTexture = SDL_CreateTextureFromSurface(pGame->pRenderer, silver);
+  SDL_Rect destRect2 = {WINDOW_WIDTH * 0.005 , WINDOW_HEIGHT * 0.03 + 50, WINDOW_HEIGHT / 14, WINDOW_HEIGHT / 14};
+  SDL_RenderCopy(pGame->pRenderer, silverTexture, NULL, &destRect2);
+
+  SDL_Surface* bronze = IMG_Load("../lib/resources/bronze.png");
+  SDL_Texture* bronzeTexture = SDL_CreateTextureFromSurface(pGame->pRenderer, bronze);
+  SDL_Rect destRect3 = {WINDOW_WIDTH * 0.005, WINDOW_HEIGHT * 0.03 + 100, WINDOW_HEIGHT / 14, WINDOW_HEIGHT / 14};
+  SDL_RenderCopy(pGame->pRenderer, bronzeTexture, NULL, &destRect3);
+
+  SDL_Surface* clown = IMG_Load("../lib/resources/clown.png");
+  SDL_Texture* clownTexture = SDL_CreateTextureFromSurface(pGame->pRenderer, clown);
+  SDL_Rect destRect4 = {WINDOW_WIDTH * 0.005, WINDOW_HEIGHT * 0.03 + 150, WINDOW_HEIGHT / 14, WINDOW_HEIGHT / 14};
+  SDL_RenderCopy(pGame->pRenderer, clownTexture, NULL, &destRect4);
+
+  SDL_FreeSurface(gold);
+  SDL_DestroyTexture(goldTexture);
+  SDL_FreeSurface(silver);
+  SDL_DestroyTexture(silverTexture);
+  SDL_FreeSurface(bronze);
+  SDL_DestroyTexture(bronzeTexture);
+  SDL_FreeSurface(clown);
+  SDL_DestroyTexture(clownTexture);
 }
 
 //Checks nrOfCollisions, if 1 snake alive sets collided to 1 (filip)
