@@ -197,8 +197,8 @@ void run(Game *pGame) {
         render_snake(pGame);
 
         //Check if one Snake left, if so reset game and display winner (filip)
-        //collision_counter(pGame);
-        // if (pGame->collided==1) reset_game(pGame);
+        collision_counter(pGame);
+        if (pGame->collided==1) reset_game(pGame);
 
       break;
       case START: // Main Menu
@@ -837,6 +837,7 @@ void reset_game(Game *pGame) {
   SDL_SetRenderDrawColor(pGame->pRenderer, 0, 0, 0, 255);
   SDL_RenderClear(pGame->pRenderer);
   pGame->state = START;
+  pGame->scene = MENU_SCENE;
   
 }
 

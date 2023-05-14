@@ -181,8 +181,8 @@ void run(Game *pGame) {
         render_snake(pGame);
 
         //Check if one Snake left, if so reset game and display winner (filip)
-        //collision_counter(pGame);
-        // if (pGame->collided==1) reset_game(pGame);
+        collision_counter(pGame);
+        if (pGame->collided==1) reset_game(pGame);
 
       break;
       case START: // Waiting for all clients
