@@ -822,7 +822,7 @@ void collision_counter(Game *pGame) {
     if (pGame->pSnke[i]->snakeCollided == 1) nrOfCollisions++;
   }
 
-  if (nrOfCollisions == MAX_SNKES - (MAX_SNKES-1)) pGame->collided = 1;
+  if (nrOfCollisions == 3) pGame->collided = 1;
 
 }
 
@@ -837,6 +837,8 @@ void reset_game(Game *pGame) {
   SDL_SetRenderDrawColor(pGame->pRenderer, 0, 0, 0, 255);
   SDL_RenderClear(pGame->pRenderer);
   pGame->state = START;
+  pGame->curentClients=0;
+  pGame->snkeID=0;
   pGame->scene = MENU_SCENE;
   
 }
