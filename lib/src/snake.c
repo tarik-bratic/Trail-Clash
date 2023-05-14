@@ -19,7 +19,7 @@ char *snakeColors[] = {
 
 };
 
-SDL_Color trailColors[] = {{255, 0, 0, 255},{0, 0, 255, 255},{0, 255, 0, 255},{255, 255, 0, 255}};
+SDL_Color trailColors[] = { {255, 0, 0, 255}, {0, 0, 255, 255}, {0, 255, 0, 255}, {255, 255, 0, 255} };
 
 /* Create a snake with attributes */
 Snake *create_snake(SDL_Renderer *pRenderer, int number, int color) {
@@ -206,38 +206,36 @@ static float distance(int x1, int y1, int x2, int y2) {
 }
 
 /* Reset the snake to default values */
-void reset_snake(Snake *pSnke) {
+void reset_snake(Snake *pSnke, int snakeNum) {
 
   pSnke->alive = 1;
   pSnke->trailLength = 0;
   pSnke->trailCounter = 0;
   pSnke->snakeCollided = 0;
   pSnke->xVel=pSnke->yVel=0;
+  
+  if (snakeNum == 0) {
+    pSnke->xSrt = pSnke->xCord = pSnke->snkeRect.x = WINDOW_WIDTH / 4 + 50;
+    pSnke->ySrt = pSnke->yCord = pSnke->snkeRect.y = WINDOW_HEIGHT / 4 - 80;
+    pSnke->angle = 130;
+  }
 
-  for (int i = 0; i < MAX_SNKES; i++) {
-    if (i == 0) {
-      pSnke->xSrt = pSnke->xCord = pSnke->snkeRect.x = WINDOW_WIDTH / 4 + 50;
-      pSnke->ySrt = pSnke->yCord = pSnke->snkeRect.y = WINDOW_HEIGHT / 4 - 80;
-      pSnke->angle = 130;
-    }
+  if (snakeNum == 1) {
+    pSnke->xSrt = pSnke->xCord = pSnke->snkeRect.x = (WINDOW_WIDTH / 4 + 45) * 3;
+    pSnke->ySrt = pSnke->yCord = pSnke->snkeRect.y = WINDOW_HEIGHT / 4 - 80;
+    pSnke->angle = -130;
+  }
 
-    if (i == 1) {
-      pSnke->xSrt = pSnke->xCord = pSnke->snkeRect.x = (WINDOW_WIDTH / 4 + 45) * 3;
-      pSnke->ySrt = pSnke->yCord = pSnke->snkeRect.y = WINDOW_HEIGHT / 4 - 80;
-      pSnke->angle = -130;
-    }
+  if (snakeNum == 2) {
+    pSnke->xSrt = pSnke->xCord = pSnke->snkeRect.x = WINDOW_WIDTH / 4 + 50;
+    pSnke->ySrt = pSnke->yCord = pSnke->snkeRect.y = WINDOW_HEIGHT - 80;
+    pSnke->angle = 50;
+  }
 
-    if (i == 2) {
-      pSnke->xSrt = pSnke->xCord = pSnke->snkeRect.x = WINDOW_WIDTH / 4 + 50;
-      pSnke->ySrt = pSnke->yCord = pSnke->snkeRect.y = WINDOW_HEIGHT - 80;
-      pSnke->angle = 50;
-    }
-
-    if (i == 3) {
-      pSnke->xSrt = pSnke->xCord = pSnke->snkeRect.x = (WINDOW_WIDTH / 4 + 45) * 3;
-      pSnke->ySrt = pSnke->yCord = pSnke->snkeRect.y = WINDOW_HEIGHT - 80;
-      pSnke->angle = -50;
-    }
+  if (snakeNum == 3) {
+    pSnke->xSrt = pSnke->xCord = pSnke->snkeRect.x = (WINDOW_WIDTH / 4 + 45) * 3;
+    pSnke->ySrt = pSnke->yCord = pSnke->snkeRect.y = WINDOW_HEIGHT - 80;
+    pSnke->angle = -50;
   }
 
   for(int i = 0; i < MAX_TRAIL_POINTS; i++) {

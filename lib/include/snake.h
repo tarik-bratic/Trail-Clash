@@ -6,7 +6,7 @@ typedef struct snakeData SnakeData;
 
 Snake *create_snake(SDL_Renderer *pRenderer, int number, int color);
 void update_snake(Snake *pSnke, Snake **otherSnakes, int nrOfSnakes, int key);
-void reset_snake(Snake *pSnke);
+void reset_snake(Snake *pSnke, int snakeNum);
 void turn_left(Snake *pSnke);
 void turn_right(Snake *pSnke);
 void draw_snake(Snake *pSnke);

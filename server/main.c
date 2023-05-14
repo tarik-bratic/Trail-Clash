@@ -55,7 +55,7 @@ int create_server(Game *pGame);
 void collision_counter(Game *pGame);
 void reset_game(Game *pGame);
 void set_up_game(Game *pGame);
-void render_snake(Game *pGame);
+void render_game(Game *pGame);
 void send_gameData(Game *pGame);
 void execute_command(Game *pGame, ClientData cData);
 void add_client(Game *pGame, ClientName cName[], IPaddress address, IPaddress clients[], int *pNumOfClients);
@@ -118,6 +118,7 @@ void run(Game *pGame) {
   int nrOfItems = 0;
 
   int showMess = 0;
+  int waiting = 0;
 
   int closeRequest = 0;
   while(!closeRequest) {
@@ -140,11 +141,12 @@ void run(Game *pGame) {
         // All players has disconnected
         if (pGame->sData.maxClients == 0) closeRequest = 1;
 
-        // Exit the program
+        // Looking if there is an input
         if (SDL_PollEvent(&event)) {
           if (event.type == SDL_QUIT) closeRequest = 1;
         }
 
+        nrOfItems = spawnItem(pGame, nrOfItems);
         // Create an array of pointers to other snakes
         for(int i = 0; i < MAX_SNKES; i++) {
 
@@ -162,11 +164,11 @@ void run(Game *pGame) {
           for(int j = 0; j < MAX_ITEMS; j++) {
 
             if(collideSnake(pGame->pSnke[i], getRectItem(pGame->pItems[j]))) {
-              boostKey = 1;
-              pGame->startTime = 0;
-              updateItem(pGame->pItems[j]);
-              nrOfItems--;
-              replace = j;
+            boostKey = 1;
+            pGame->startTime = 0;
+            updateItem(pGame->pItems[j]);
+            nrOfItems--;
+            replace = j;
             }
 
             if(boostKey > 0) {
@@ -178,16 +180,20 @@ void run(Game *pGame) {
 
         }
 
-        nrOfItems = spawnItem(pGame, nrOfItems);
+        render_game(pGame);
 
-        render_snake(pGame);
+        if (!waiting) {
+          SDL_Delay(3000);
+          waiting++;
+        }
 
         //Check if one Snake left, if so reset game and display winner (filip)
         //collision_counter(pGame);
         // if (pGame->collided==1) reset_game(pGame);
 
       break;
-      case START: // Waiting for all clients
+      // Waiting for all clients
+      case START:
 
         if (!showMess) {
           printf("Game state: Start\n");
@@ -198,7 +204,7 @@ void run(Game *pGame) {
         if (SDL_PollEvent(&event) && event.type == SDL_QUIT) closeRequest = 1;
 
         // If new data recived add client
-        if (SDLNet_UDP_Recv(pGame->pSocket, pGame->pPacket) == 1) {
+        if (SDLNet_UDP_Recv(pGame->pSocket, pGame->pPacket)) {
 
           if (cData.command != DISC) {
             add_client(pGame, pGame->cName, pGame->pPacket->address, pGame->clients, &(pGame->connected_Clients));
@@ -222,7 +228,7 @@ void set_up_game(Game *pGame) {
   pGame->state = RUNNING;
 
   for (int i = 0; i < MAX_SNKES; i++) 
-    reset_snake(pGame->pSnke[i]);
+    reset_snake(pGame->pSnke[i], i);
 
 }
 
@@ -287,11 +293,7 @@ void execute_command(Game *pGame, ClientData cData) {
 }
 
 /* Render a snake to the window */
-void render_snake(Game *pGame) {
-
-  SDL_SetRenderDrawColor(pGame->pRenderer,0,0,0,255);
-  SDL_RenderClear(pGame->pRenderer);
-  SDL_SetRenderDrawColor(pGame->pRenderer,230,230,230,255);
+void render_game(Game *pGame) {
 
   for (int i = 0; i < MAX_SNKES; i++) {
     draw_snake(pGame->pSnke[i]);
@@ -319,14 +321,12 @@ void collision_counter(Game *pGame) {
 void reset_game(Game *pGame) {
   
   for (int i = 0; i < MAX_SNKES; i++) {
-    reset_snake(pGame->pSnke[i]);
+    reset_snake(pGame->pSnke[i], i);
   }
 
   pGame->collided = 0;
   pGame->state = START;
   pGame->connected_Clients = 0;
-  SDL_SetRenderDrawColor(pGame->pRenderer, 0, 0, 0, 255);
-  SDL_RenderClear(pGame->pRenderer);
 
 }
 
@@ -410,11 +410,10 @@ void close(Game *pGame) {
     if(pGame->pSnke[i]) destroy_snake(pGame->pSnke[i]);
 
   if (pGame->pRenderer) SDL_DestroyRenderer(pGame->pRenderer);
-
   if (pGame->pWindow) SDL_DestroyWindow(pGame->pWindow);
 
+  // Network
   if (pGame->pPacket) SDLNet_FreePacket(pGame->pPacket);
-
 	if (pGame->pSocket) SDLNet_UDP_Close(pGame->pSocket);
 
   SDLNet_Quit();
