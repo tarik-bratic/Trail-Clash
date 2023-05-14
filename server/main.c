@@ -303,7 +303,7 @@ void collision_counter(Game *pGame) {
     if (pGame->pSnke[i]->snakeCollided == 1) nrOfCollisions++;
   }
 
-  if (nrOfCollisions == 3) pGame->collided = 1;
+  if (nrOfCollisions == (MAX_SNKES-1)) pGame->collided = 1;
 
 }
 
