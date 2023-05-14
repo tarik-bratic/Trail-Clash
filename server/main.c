@@ -171,7 +171,7 @@ void run(Game *pGame) {
 
             if(boostKey > 0) {
               pGame->startTime++;
-              if(pGame->startTime==200) boostKey=0;
+              if(pGame->startTime == 200) boostKey = 0;
             }
 
           }
@@ -244,9 +244,7 @@ void send_gameData(Game *pGame) {
 		  pGame->pPacket->len = sizeof(ServerData);
       pGame->pPacket->address = pGame->clients[i];
       
-		  if ( !SDLNet_UDP_Send(pGame->pSocket, -1, pGame->pPacket) ) {
-        printf("Error (UDP_Send): %s", SDLNet_GetError());
-      }
+		  SDLNet_UDP_Send(pGame->pSocket, -1, pGame->pPacket);
 
     }
 
@@ -304,7 +302,7 @@ void render_snake(Game *pGame) {
 
 }
 
-//Checks nrOfCollisions, if 1 snake alive sets collided to 1 (filip)
+/* Checks nrOfCollisions, if 1 snake alive sets collided to 1 */
 void collision_counter(Game *pGame) {
 
   int nrOfCollisions = 0;
@@ -317,7 +315,7 @@ void collision_counter(Game *pGame) {
 
 }
 
-//sets the game state to START and resets to default values (filip)
+/* Checks nrOfCollisions, if 1 snake alive sets collided to 1 */
 void reset_game(Game *pGame) {
   
   for (int i = 0; i < MAX_SNKES; i++) {
@@ -325,30 +323,29 @@ void reset_game(Game *pGame) {
   }
 
   pGame->collided = 0;
-  SDL_SetRenderDrawColor(pGame->pRenderer, 0, 0, 0, 255);
-  SDL_RenderClear(pGame->pRenderer);
   pGame->state = START;
   pGame->connected_Clients = 0;
+  SDL_SetRenderDrawColor(pGame->pRenderer, 0, 0, 0, 255);
+  SDL_RenderClear(pGame->pRenderer);
 
 }
 
+/* Spawn Item by creating image and creating object */
 int spawnItem(Game *pGame, int NrOfItems) {
 
   int spawn = rand() % 500;
 
-  if(spawn == 0) {
-    if(NrOfItems != MAX_ITEMS) {
-      pGame->pItemImage[NrOfItems] = createItemImage(pGame->pRenderer);
-      pGame->pItems[NrOfItems] = createItem(pGame->pItemImage[NrOfItems],WINDOW_WIDTH,WINDOW_HEIGHT, 0, 500, 500); 
-      NrOfItems++;
-    }
+  if(spawn == 0 && NrOfItems != MAX_ITEMS) {
+    pGame->pItemImage[NrOfItems] = createItemImage(pGame->pRenderer);
+    pGame->pItems[NrOfItems] = createItem(pGame->pItemImage[NrOfItems],WINDOW_WIDTH,WINDOW_HEIGHT, 0, 500, 500); 
+    NrOfItems++;
   }
 
   return NrOfItems;
 
 }
 
-// creates Items and creates their image
+/* Creates Items and creates their image */
 int init_Items(Game *pGame) {
 
   SDL_SetRenderDrawColor(pGame->pRenderer,0,0,0,255);
@@ -377,7 +374,7 @@ int init_Items(Game *pGame) {
 int init_allSnakes(Game *pGame) {
 
   for (int i = 0; i < MAX_SNKES; i++)
-    pGame->pSnke[i] = create_snake(i, pGame->pRenderer, WINDOW_WIDTH, WINDOW_HEIGHT, i);
+    pGame->pSnke[i] = create_snake(pGame->pRenderer, i, i);
 
   for (int i = 0; i < MAX_SNKES; i++) {
     if (!pGame->pSnke[i]) {

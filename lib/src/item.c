@@ -1,7 +1,7 @@
+#include <math.h>
+#include <stdlib.h>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
-#include <stdlib.h>
-#include <math.h>
 #include "../include/item.h"
 #include "../include/data.h"
 

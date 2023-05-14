@@ -4,7 +4,7 @@
 /* CONST VERIABLES */
 #define PI 3.14
 #define MAX_ITEMS 1
-#define MAX_SNKES 2
+#define MAX_SNKES 1
 #define POINT_SIZE 2
 #define WINDOW_WIDTH 900
 #define WINDOW_HEIGHT 560

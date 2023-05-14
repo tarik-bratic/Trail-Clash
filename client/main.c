@@ -61,10 +61,6 @@ int init_structure(Game *pGame);
 void run(Game *pGame);
 void close(Game *pGame);
 
-void clientReady(Game *pGame);
-void draw_snakeName(Game *pGame, int i);
-void update_PlayerInfo(Game *pGame);
-
 int init_Music(Game *pGame);
 int init_Items(Game *pGame);
 int init_image(Game *pGame);
@@ -75,7 +71,7 @@ int build_scene(Game *pGame);
 void input_handler(Game *pGame, SDL_Event *pEvent);
 void render_snake(Game *pGame);
 void render_background(Game *pGame);
-int render_content(Game *pGame, GameScene Scene, int index);
+int render_scene(Game *pGame, GameScene Scene, int index);
 void looby(Game *pGame);
 void highlight_text(Game *pGame, int index);
 void disconnect(Game *pGame);
@@ -85,6 +81,9 @@ void reset_game(Game *pGame);
 void draw_interface(Game* pGame);
 void collision_counter(Game *pGame);
 int spawnItem(Game *pGame, int nrOfItems);
+void clientReady(Game *pGame);
+void draw_snakeName(Game *pGame, int i);
+void update_PlayerInfo(Game *pGame);
 
 int main(int argv, char** args) {
   
@@ -206,7 +205,7 @@ void run(Game *pGame) {
       break;
       case START: // Main Menu
 
-        if ( !render_content(pGame, pGame->scene, text_index) ) closeRequest = 1;
+        if ( !render_scene(pGame, pGame->scene, text_index) ) closeRequest = 1;
 
         // Menu input handler
         if (SDL_PollEvent(&event)) {
@@ -260,7 +259,8 @@ void run(Game *pGame) {
 
 }
 
-int render_content(Game *pGame, GameScene Scene, int index) {
+/* Show the selected scene */
+int render_scene(Game *pGame, GameScene Scene, int index) {
 
   switch (Scene) {
     case MENU_SCENE:
@@ -364,6 +364,7 @@ void render_snake(Game *pGame) {
 
 }
 
+/* Display a name on top of the snake object */
 void draw_snakeName(Game *pGame, int i) {
 
   pGame->pSnkeName = create_text(pGame->pRenderer, 255, 255, 255, pGame->pNameFont,
@@ -393,24 +394,19 @@ void highlight_text(Game *pGame, int index) {
 
 /* Render scene lobby */
 void looby(Game *pGame) {
-
   render_background(pGame);
   draw_text(pGame->pWaitingText);
-
 }
 
+/* Spawn Item by creating image and creating object */
 int spawnItem(Game *pGame, int NrOfItems) {
 
   int spawn = rand() % 50;
 
-  if (spawn == 0) {
-    if (NrOfItems == MAX_ITEMS) {
-    }
-    else {
-      pGame->pItemImage[NrOfItems] = createItemImage(pGame->pRenderer);
-      pGame->pItems[NrOfItems] = createItem(pGame->pItemImage[NrOfItems], WINDOW_WIDTH, WINDOW_HEIGHT, 0, 500, 500);
-      NrOfItems++;
-    }
+  if (spawn == 0 && NrOfItems != MAX_ITEMS) {
+    pGame->pItemImage[NrOfItems] = createItemImage(pGame->pRenderer);
+    pGame->pItems[NrOfItems] = createItem(pGame->pItemImage[NrOfItems], WINDOW_WIDTH, WINDOW_HEIGHT, 0, 500, 500);
+    NrOfItems++;
   }
 
   return NrOfItems;
@@ -461,6 +457,7 @@ int build_scene(Game *pGame) {
   ClientData cData;
 
   int ESC = 0;
+  int hasErased = 0;
 
   // Input mananger
   int input_index = 0;
@@ -545,15 +542,18 @@ int build_scene(Game *pGame) {
     }
 
     // Erase space in the begining
-    for (int i = 0, j = 0, k = 0; i < 2; i++) {
-      if (clientName[i] != ' ') {
-        clientName[j] = clientName[i];
-        j++;
+    if (!hasErased) {
+      for (int i = 0, j = 0, k = 0; i < 2; i++) {
+        if (clientName[i] != ' ') {
+          clientName[j] = clientName[i];
+          j++;
+        }
+        if (ipAddr[i] != ' ') {
+          ipAddr[k] = ipAddr[i];
+          k++;
+        }
       }
-      if (ipAddr[i] != ' ') {
-        ipAddr[k] = ipAddr[i];
-        k++;
-      }
+      hasErased++;
     }
 
     render_background(pGame);
@@ -702,6 +702,7 @@ int conn_server(Game *pGame) {
 
 }
 
+/* Wrap in packet that client is ready */
 void clientReady(Game *pGame) {
 
   ClientData cData;
@@ -730,6 +731,7 @@ void disconnect(Game *pGame) {
 
 }
 
+/* Update the names of every client in the game */
 void update_PlayerInfo(Game *pGame) {
 
   ServerData sData;
@@ -756,6 +758,7 @@ void update_ServerData(Game *pGame) {
 
 }
 
+/* Draw the interface the user sees when playing */
 void draw_interface(Game* pGame) {
 
   // Sorting the player with highest score first
@@ -771,14 +774,16 @@ void draw_interface(Game* pGame) {
   //   }
   // }
 
+  int txtY = 0;
+
   render_background(pGame);
 
   // Render the playing field
   SDL_Rect field_Walls = {
     WINDOW_WIDTH - 700,   // Rectangle x cord
     0,                    // Rectangle y cord
-    WINDOW_WIDTH,    // Width of the rectangle
-    WINDOW_HEIGHT   // Height of the rectangle
+    WINDOW_WIDTH,         // Width of the rectangle
+    WINDOW_HEIGHT         // Height of the rectangle
   };
 
   SDL_SetRenderDrawColor(pGame->pRenderer, 255, 255, 255, 255);
@@ -787,18 +792,16 @@ void draw_interface(Game* pGame) {
   // This is the field
   SDL_Rect field_rect = {
     WINDOW_WIDTH - 695,   // Rectangle x cord
-    5,                   // Rectangle y cord
-    WINDOW_WIDTH - 210,    // Width of the rectangle
-    WINDOW_HEIGHT - 10   // Height of the rectangle
+    5,                    // Rectangle y cord
+    WINDOW_WIDTH - 210,   // Width of the rectangle
+    WINDOW_HEIGHT - 10    // Height of the rectangle
   };
 
   SDL_SetRenderDrawColor(pGame->pRenderer, 58, 103, 131, 255);
   SDL_RenderFillRect(pGame->pRenderer, &field_rect);
 
-  int txtY = 0;
-
-  draw_text(pGame->pBoardInfo);
   // Render the leaderboard
+  draw_text(pGame->pBoardInfo);
   for(int i = 0; i < MAX_SNKES; i++) {
 
     SDL_SetRenderDrawColor(pGame->pRenderer, 255, 255, 255, 255);
@@ -816,9 +819,10 @@ void draw_interface(Game* pGame) {
     txtY += 35;
 
   }
+  
 }
 
-//Checks nrOfCollisions, if 1 snake alive sets collided to 1 (filip)
+/* Checks nrOfCollisions, if 1 snake alive sets collided to 1 */
 void collision_counter(Game *pGame) {
 
   int nrOfCollisions = 0;
@@ -830,7 +834,7 @@ void collision_counter(Game *pGame) {
 
 }
 
-//sets the game state to START and resets to default values (filip)
+/* Sets the game state to START and resets to default values */
 void reset_game(Game *pGame) {
   
   for (int i = 0; i < MAX_SNKES; i++){
@@ -838,9 +842,9 @@ void reset_game(Game *pGame) {
   }
 
   pGame->collided = 0;
+  pGame->state = START;
   SDL_SetRenderDrawColor(pGame->pRenderer, 0, 0, 0, 255);
   SDL_RenderClear(pGame->pRenderer);
-  pGame->state = START;
   
 }
 
@@ -924,7 +928,7 @@ int create_allText(Game *pGame) {
 int init_allSnakes(Game *pGame) {
 
   for (int i = 0; i < MAX_SNKES; i++)
-    pGame->pSnke[i] = create_snake(i, pGame->pRenderer, WINDOW_WIDTH, WINDOW_HEIGHT, i);
+    pGame->pSnke[i] = create_snake(pGame->pRenderer, i, i);
 
   for (int i = 0; i < MAX_SNKES; i++) {
     if (!pGame->pSnke[i]) {
@@ -936,7 +940,7 @@ int init_allSnakes(Game *pGame) {
 
 }
 
-// creates Items and creates their image
+/* Creates Items and creates their image */
 int init_Items(Game *pGame) {
 
   SDL_SetRenderDrawColor(pGame->pRenderer, 0, 0, 0, 255);
@@ -962,42 +966,22 @@ int init_Items(Game *pGame) {
 int init_image(Game *pGame) {
 
   pGame->pSpaceSurface = IMG_Load("../lib/resources/space.png");
-  if (!pGame->pSpaceSurface) {
+  pGame->pEnterSurface = IMG_Load("../lib/resources/enter.png");
+  pGame->pEscSurface = IMG_Load("../lib/resources/esc.png");
+  if (!pGame->pSpaceSurface || !pGame->pEnterSurface || !pGame->pEscSurface) {
     close(pGame);
     return 0;
   }
 
   pGame->pSpaceTexture = SDL_CreateTextureFromSurface(pGame->pRenderer, pGame->pSpaceSurface);
-  if (!pGame->pSpaceTexture) {
+  pGame->pEnterTexture = SDL_CreateTextureFromSurface(pGame->pRenderer, pGame->pEnterSurface);
+  pGame->pEscTexture = SDL_CreateTextureFromSurface(pGame->pRenderer, pGame->pEscSurface);
+  if (!pGame->pSpaceTexture || !pGame->pEnterTexture || !pGame->pEscTexture) {
     close(pGame);
     return 0;
   }
   SDL_FreeSurface(pGame->pSpaceSurface);
-
-  pGame->pEnterSurface = IMG_Load("../lib/resources/enter.png");
-  if (!pGame->pEnterSurface) {
-    close(pGame);
-    return 0;
-  }
-
-  pGame->pEnterTexture = SDL_CreateTextureFromSurface(pGame->pRenderer, pGame->pEnterSurface);
-  if (!pGame->pEnterTexture) {
-    close(pGame);
-    return 0;
-  }
   SDL_FreeSurface(pGame->pEnterSurface);
-
-  pGame->pEscSurface = IMG_Load("../lib/resources/esc.png");
-  if (!pGame->pEscSurface) {
-    close(pGame);
-    return 0;
-  }
-
-  pGame->pEscTexture = SDL_CreateTextureFromSurface(pGame->pRenderer, pGame->pEscSurface);
-  if (!pGame->pEscTexture) {
-    close(pGame);
-    return 0;
-  }
   SDL_FreeSurface(pGame->pEscSurface);
 
   return 1;
