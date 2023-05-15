@@ -4,7 +4,7 @@
 /* CONST VERIABLES */
 #define PI 3.14
 #define MAX_ITEMS 1
-#define MAX_SNKES 3
+#define MAX_SNKES 4
 #define POINT_SIZE 2
 #define WINDOW_WIDTH 900
 #define WINDOW_HEIGHT 560
@@ -12,7 +12,7 @@
 #define INPUT_BUFFER_SIZE 128
 #define MAX_TRAIL_POINTS 100000000
 
-#define DATA_SIZE 2048
+#define DATA_SIZE 1024
 #define UDP_SERVER_PORT 2000
 #define UDP_CLIENT_PORT 0
 
