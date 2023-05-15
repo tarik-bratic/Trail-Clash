@@ -34,6 +34,7 @@ typedef struct game {
   //ITEM
   ItemImage *pItemImage[MAX_ITEMS];
   Item *pItems[MAX_ITEMS];
+  ItemData iData;
   int numItems;
 
   //TIMER
@@ -55,6 +56,7 @@ void close(Game *pGame);
 void set_up_game(Game *pGame);
 void render_snake(Game *pGame);
 void send_gameData(Game *pGame);
+void send_itemData(Game *pGame, int spawn);
 void execute_command(Game *pGame, ClientData cData);
 void add_client(IPaddress address, IPaddress clients[], int *pNumOfClients);
 void reset_game(Game *pGame);
@@ -109,7 +111,7 @@ int init_structure(Game *pGame) {
   // Create all snakes
   init_allSnakes(pGame);
 
-  init_Items(pGame);
+  //init_Items(pGame);
 
   // Establish server to client 
   if ( !(pGame->pSocket = SDLNet_UDP_Open(UDP_SERVER_PORT)) ) {
@@ -134,9 +136,10 @@ void run(Game *pGame) {
   SDL_Event event;
   ClientData cData;
   int showMess = 0;
-  int boostKey = 0;
+  int boostKey[MAX_SNKES];
   int nrOfItems = 0;
   int replace;
+  int items = 0;
 
   int closeRequest = 0;
   while(!closeRequest) {
@@ -152,6 +155,11 @@ void run(Game *pGame) {
         }
         
         send_gameData(pGame);
+        if(items==0)
+        {
+          init_Items(pGame);
+          items++;
+        }
         
         // Update new recived data to client data
         while(SDLNet_UDP_Recv(pGame->pSocket, pGame->pPacket) == 1) {
@@ -178,7 +186,7 @@ void run(Game *pGame) {
             if (j != i) otherSnakes[otherSnakesIndex++] = pGame->pSnke[j];
           }
 
-          //nrOfItems = spawnItem(pGame, nrOfItems);
+          nrOfItems = spawnItem(pGame, nrOfItems);
   
           // Update snake cord
           //update_snake(pGame->pSnke[i], otherSnakes, MAX_SNKES - 1, boostKey);
@@ -186,7 +194,7 @@ void run(Game *pGame) {
           for(int j=0;j<MAX_ITEMS;j++) 
           {
             if(collideSnake(pGame->pSnke[i],getRectItem(pGame->pItems[j]))) {
-              boostKey = 1;
+              boostKey[i] = 1;
               pGame->startTime = 0;
               updateItem(pGame->pItems[j]);
               nrOfItems--;
@@ -195,15 +203,13 @@ void run(Game *pGame) {
             if(boostKey>0) {
               pGame->startTime++;
               if(pGame->startTime==200) {
-                boostKey=0;
+                boostKey[i]=0;
               }
             }
+            update_snake(pGame->pSnke[i], otherSnakes, MAX_SNKES - 1, boostKey[i]);
           }
-          // Update snake cord
-          update_snake(pGame->pSnke[i], otherSnakes, MAX_SNKES - 1, boostKey);
+          //update_snake(pGame->pSnke[i], otherSnakes, MAX_SNKES - 1, boostKey);
         }
-
-        nrOfItems = spawnItem(pGame, nrOfItems);
 
         // Render snake
         render_snake(pGame);
@@ -251,10 +257,9 @@ int init_Items(Game *pGame) {
 
   for (int i = 0; i < MAX_ITEMS; i++)
   {
-    /*int xcoords = rand()%850;
-    int ycoords = rand()%510;*/
+    send_itemData(pGame, 0);
     pGame->pItemImage[i] = createItemImage(pGame->pRenderer);
-    pGame->pItems[i] = createItem(pGame->pItemImage[i], WINDOW_WIDTH, WINDOW_HEIGHT, 0, 500, 500);
+    pGame->pItems[i] = createItem(pGame->pItemImage[i], WINDOW_WIDTH, WINDOW_HEIGHT, 0, pGame->iData.xcoords, pGame->iData.ycoords);
   }
 
   for (int i = 0; i < MAX_ITEMS; i++)
@@ -273,12 +278,9 @@ int spawnItem(Game *pGame, int NrOfItems)
   int spawn = rand() % 500;
     if(spawn == 0)
     {
-      if(NrOfItems==MAX_ITEMS)
-      {}
-      else
+      if(NrOfItems!=MAX_ITEMS)
       {
-        /*int xcoords = rand()%850;
-        int ycoords = rand()%510;*/
+        send_itemData(pGame, 1);
         pGame->pItemImage[NrOfItems] = createItemImage(pGame->pRenderer);
         pGame->pItems[NrOfItems] = createItem(pGame->pItemImage[NrOfItems],WINDOW_WIDTH,WINDOW_HEIGHT, 0, 500, 500); 
         NrOfItems++;
@@ -320,6 +322,24 @@ void send_gameData(Game *pGame) {
 
     }
 
+}
+
+void send_itemData(Game *pGame, int spawn)
+{
+  pGame->iData.spawn = spawn;
+  pGame->iData.xcoords = rand()%850;
+  pGame->iData.ycoords = rand()%510;
+
+  for (int i = 0; i < MAX_SNKES; i++) {
+  memcpy(pGame->pPacket->data, &(pGame->iData), sizeof(ItemData));
+  pGame->pPacket->len = sizeof(ItemData);
+  pGame->pPacket->address = pGame->clients[i];
+
+  if(!SDLNet_UDP_Send(pGame->pSocket, -1, pGame->pPacket)) 
+  {
+    printf("Error (UDP_Send): %s", SDLNet_GetError());
+  }
+  }
 }
 
 /* Add new clients to the server if they joined */

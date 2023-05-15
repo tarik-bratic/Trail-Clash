@@ -30,6 +30,7 @@ typedef struct game {
   // ITEM
   ItemImage *pItemImage[MAX_ITEMS];
   Item *pItems[MAX_ITEMS];
+  ItemData iData;
 
   // TIMER
   int startTime;
@@ -192,7 +193,26 @@ void run(Game *pGame) {
           else input_handler(pGame, &event);
         }
 
-        nrOfItems = spawnItem(pGame, nrOfItems);
+        if(pGame->iData.spawn == 1)
+        {
+          nrOfItems = spawnItem(pGame, nrOfItems);
+        }
+
+        for (int j = 0; j < MAX_ITEMS; j++) {
+          if(collideSnake(pGame->pSnke[j],getRectItem(pGame->pItems[j]))) {
+              /*boostKey = 1;
+              pGame->startTime = 0;*/
+              updateItem(pGame->pItems[j]);
+              nrOfItems--;
+              replace = j;
+            }
+            /*if(boostKey>0) {
+              pGame->startTime++;
+              if(pGame->startTime==200) {
+                boostKey=0;
+              }
+            }*/
+        }
 
         // Create an array of pointers to other snakes
         for(int i = 0; i < MAX_SNKES; i++) {
@@ -213,12 +233,6 @@ void run(Game *pGame) {
               nrOfItems--;
               replace = j;
             }
-            /*if(boostKey>0) {
-              pGame->startTime++;
-              if(pGame->startTime==200) {
-                boostKey=0;
-              }
-            }*/
         }
   
           // Update snake cord, send data
@@ -346,8 +360,9 @@ int init_Items(Game *pGame) {
   SDL_SetRenderDrawColor(pGame->pRenderer, 230, 230, 230, 255);
 
   for (int i = 0; i < MAX_ITEMS; i++) {
+    ItemData iData;
     pGame->pItemImage[i] = createItemImage(pGame->pRenderer);
-    pGame->pItems[i] = createItem(pGame->pItemImage[i], WINDOW_WIDTH, WINDOW_HEIGHT, 0, 500, 500);
+    pGame->pItems[i] = createItem(pGame->pItemImage[i], WINDOW_WIDTH, WINDOW_HEIGHT, 0, iData.xcoords, iData.xcoords);
   }
 
   for (int i = 0; i < MAX_ITEMS; i++) {
@@ -767,16 +782,13 @@ void render_snake(Game *pGame) {
 }
 
 int spawnItem(Game *pGame, int NrOfItems) {
-  int spawn = rand() % 500;
-  if (spawn == 0) {
-    if (NrOfItems == MAX_ITEMS) {
-    }
-    else {
+    if (NrOfItems != MAX_ITEMS) 
+    {
       pGame->pItemImage[NrOfItems] = createItemImage(pGame->pRenderer);
       pGame->pItems[NrOfItems] = createItem(pGame->pItemImage[NrOfItems], WINDOW_WIDTH, WINDOW_HEIGHT, 0, 500, 500);
       NrOfItems++;
+      pGame->iData.spawn = 0;
     }
-  }
   return NrOfItems;
 }
 

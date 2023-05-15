@@ -80,7 +80,7 @@ typedef struct snake Snake;
 
 struct itemData {
 
-    int xcoords, ycoords;
+    int xcoords, ycoords, spawn;
 
 };
 typedef struct itemData ItemData;

@@ -11,7 +11,5 @@ void drawItem(Item *pItem);
 void destroyItem(Item *pItem);
 SDL_Rect getRectItem(Item *pItem);
 void destroyItemImage(ItemImage *pItemImage);
-int getXcoords(int xcoords, int socx);
-int getYcoords(int ycoords, int socy);
 
 #endif
