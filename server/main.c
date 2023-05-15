@@ -162,11 +162,11 @@ void run(Game *pGame) {
           for(int j = 0; j < MAX_ITEMS; j++) {
 
             if(collideSnake(pGame->pSnke[i], getRectItem(pGame->pItems[j]))) {
-            boostKey = 1;
-            pGame->startTime = 0;
-            updateItem(pGame->pItems[j]);
-            nrOfItems--;
-            replace = j;
+              boostKey = 1;
+              pGame->startTime = 0;
+              updateItem(pGame->pItems[j]);
+              nrOfItems--;
+              replace = j;
             }
 
             if(boostKey > 0) {

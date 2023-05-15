@@ -187,6 +187,7 @@ void run(Game *pGame) {
           firstStart++;
         }
 
+        // Side note: This one leads to a segmentation fault
         if (!Mix_PlayingMusic()) {
           Mix_PlayMusic(pGame->pMusic, -1);
         }
@@ -1042,14 +1043,25 @@ int init_image(Game *pGame) {
 /* Initializes audios/sounds & checks for error */
 int init_Music(Game *pGame) {
 
-  Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048);
+  if (Mix_Init(MIX_INIT_MP3) != MIX_INIT_MP3) {
+    printf("Failed to initialize SDL_mixer: %s\n", Mix_GetError());
+    return 0;
+  }
+  if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0) {
+    printf("Failed to open audio device: %s\n", Mix_GetError());
+    Mix_Quit();
+    SDL_Quit();
+    return 0;
+  }
   pGame->pClickSound = Mix_LoadMUS("../lib/resources/click_sound.wav");
   pGame->pSelectSound = Mix_LoadMUS("../lib/resources/select_sound.wav");
   pGame->pMusic = Mix_LoadMUS("../lib/resources/game_music.mp3");
 
   if(!pGame->pMusic || !pGame->pClickSound || !pGame->pSelectSound) {
-    printf("Error: %s\n", SDL_GetError());
-    close(pGame);
+    printf("Failed to load music: %s\n", Mix_GetError());
+    Mix_CloseAudio();
+    Mix_Quit();
+    SDL_Quit();
     return 0;
   }
 
