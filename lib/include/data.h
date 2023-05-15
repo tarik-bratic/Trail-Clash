@@ -4,7 +4,7 @@
 /* CONST VERIABLES */
 #define PI 3.14
 #define MAX_ITEMS 1
-#define MAX_SNKES 1
+#define MAX_SNKES 3
 #define POINT_SIZE 2
 #define WINDOW_WIDTH 900
 #define WINDOW_HEIGHT 560
@@ -12,7 +12,7 @@
 #define INPUT_BUFFER_SIZE 128
 #define MAX_TRAIL_POINTS 100000000
 
-#define DATA_SIZE 512
+#define DATA_SIZE 2048
 #define UDP_SERVER_PORT 2000
 #define UDP_CLIENT_PORT 0
 
@@ -21,7 +21,7 @@ enum gameState { START, RUNNING };
 typedef enum gameState GameState;
 
 /* Game Scene struct */
-enum gameScene { MENU_SCENE, BUILD_SCENE, LOBBY_SCENE, GAME_SCENE };
+enum gameScene { MENU_SCENE, BUILD_SCENE, LOBBY_SCENE };
 typedef enum gameScene GameScene;
 
 /* Client Command struct */
@@ -32,14 +32,9 @@ typedef enum clientCommand ClientCommand;
 struct clientData {
     ClientCommand command;
     int snkeNumber;
-    char playerName[INPUT_BUFFER_SIZE];
+    char clientName[INPUT_BUFFER_SIZE];
 };
 typedef struct clientData ClientData;
-
-struct clientName {
-  char name[INPUT_BUFFER_SIZE];
-};
-typedef struct clientName ClientName;
 
 /* Snake Data struct */
 struct snakeData {
@@ -62,7 +57,6 @@ struct serverData {
     SnakeData snakes[MAX_SNKES];
     GameState gState;
     int maxClients;
-    int presentClients;
     char playerName[MAX_SNKES][INPUT_BUFFER_SIZE];
 
 };
@@ -94,12 +88,5 @@ struct snake {
 
 };
 typedef struct snake Snake;
-
-struct itemData {
-
-    int xcoords, ycoords;
-
-};
-typedef struct itemData ItemData;
 
 #endif

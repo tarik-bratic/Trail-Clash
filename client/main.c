@@ -754,7 +754,7 @@ void clientReady(Game *pGame) {
 
   cData.command = READY;
   cData.snkeNumber = -1;
-  strcpy(cData.playerName, pGame->myName);
+  strcpy(cData.clientName, pGame->myName);
   memcpy(pGame->pPacket->data, &cData, sizeof(ClientData));
 	pGame->pPacket->len = sizeof(ClientData);
 
@@ -768,7 +768,7 @@ void disconnect(Game *pGame) {
   ClientData cData;
 
   cData.command = DISC;
-  strcpy(cData.playerName, pGame->myName);
+  strcpy(cData.clientName, pGame->myName);
   memcpy(pGame->pPacket->data, &cData, sizeof(ClientData));
 	pGame->pPacket->len = sizeof(ClientData);
 
@@ -883,9 +883,6 @@ void reset_game(Game *pGame) {
   for (int i = 0; i < MAX_SNKES; i++){
     reset_snake(pGame->pSnke[i], i);
   }
-
-  pGame->collided = 0;
-  pGame->state = START;
   
 }
 
@@ -1020,6 +1017,9 @@ int init_image(Game *pGame) {
   pGame->pEnterSurface = IMG_Load("../lib/resources/enter.png");
   pGame->pEscSurface = IMG_Load("../lib/resources/esc.png");
   if (!pGame->pSpaceSurface || !pGame->pEnterSurface || !pGame->pEscSurface) {
+    SDL_FreeSurface(pGame->pSpaceSurface);
+    SDL_FreeSurface(pGame->pEnterSurface);
+    SDL_FreeSurface(pGame->pEscSurface);
     close(pGame);
     return 0;
   }
@@ -1067,10 +1067,6 @@ void close(Game *pGame) {
 
   if (pGame->pRenderer) SDL_DestroyRenderer(pGame->pRenderer);
   if (pGame->pWindow) SDL_DestroyWindow(pGame->pWindow);
-
-  if (pGame->pSpaceSurface) SDL_FreeSurface(pGame->pSpaceSurface);
-  if (pGame->pEnterSurface) SDL_FreeSurface(pGame->pEnterSurface);
-  if (pGame->pEscSurface) SDL_FreeSurface(pGame->pEscSurface);
 
   // Destroy text
   if (pGame->pTitleSmallText) destroy_text(pGame->pTitleSmallText);
