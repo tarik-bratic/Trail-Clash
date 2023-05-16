@@ -752,9 +752,9 @@ void draw_interface(Game* pGame) {
   // Render the playing field
   SDL_Rect input_walls = {
     WINDOW_WIDTH * 0.25,    // Rectangle x cord
-    0,   // Rectangle y cord
+    0,                      // Rectangle y cord
     WINDOW_WIDTH * 0.75,    // Width of the rectangle
-    WINDOW_HEIGHT    // Width of the rectangle
+    WINDOW_HEIGHT           // Width of the rectangle
   };
 
   SDL_SetRenderDrawColor(pGame->pRenderer, 255, 255, 255, 255);
@@ -764,7 +764,7 @@ void draw_interface(Game* pGame) {
     WINDOW_WIDTH * 0.255,   // Rectangle x cord
     WINDOW_HEIGHT * 0.01,   // Rectangle y cord
     WINDOW_WIDTH * 0.74,    // Width of the rectangle
-    WINDOW_HEIGHT * 0.98   // Width of the rectangle
+    WINDOW_HEIGHT * 0.98    // Width of the rectangle
   };
 
   SDL_SetRenderDrawColor(pGame->pRenderer, 40, 40, 40, 255);
@@ -814,22 +814,22 @@ void draw_interface(Game* pGame) {
   // Render gold medal
   SDL_Surface* gold = IMG_Load("../lib/resources/gold.png"); 
   SDL_Texture* goldTexture = SDL_CreateTextureFromSurface(pGame->pRenderer, gold);
-  SDL_Rect destRect1 = {WINDOW_WIDTH * 0.005, WINDOW_HEIGHT * 0.03, WINDOW_HEIGHT / 14, WINDOW_HEIGHT / 14};
+  SDL_Rect destRect1 = {WINDOW_WIDTH * 0.005, WINDOW_HEIGHT * 0.03, WINDOW_WIDTH / 22, WINDOW_HEIGHT / 14};
   SDL_RenderCopy(pGame->pRenderer, goldTexture, NULL, &destRect1);
   // Render silver medal
   SDL_Surface* silver = IMG_Load("../lib/resources/silver.png");
   SDL_Texture* silverTexture = SDL_CreateTextureFromSurface(pGame->pRenderer, silver);
-  SDL_Rect destRect2 = {WINDOW_WIDTH * 0.005 , WINDOW_HEIGHT * 0.03 + 50, WINDOW_HEIGHT / 14, WINDOW_HEIGHT / 14};
+  SDL_Rect destRect2 = {WINDOW_WIDTH * 0.005 , WINDOW_HEIGHT * 0.03 + 50, WINDOW_WIDTH / 22, WINDOW_HEIGHT / 14};
   SDL_RenderCopy(pGame->pRenderer, silverTexture, NULL, &destRect2);
   // Render bronze medal
   SDL_Surface* bronze = IMG_Load("../lib/resources/bronze.png");
   SDL_Texture* bronzeTexture = SDL_CreateTextureFromSurface(pGame->pRenderer, bronze);
-  SDL_Rect destRect3 = {WINDOW_WIDTH * 0.005, WINDOW_HEIGHT * 0.03 + 100, WINDOW_HEIGHT / 14, WINDOW_HEIGHT / 14};
+  SDL_Rect destRect3 = {WINDOW_WIDTH * 0.005, WINDOW_HEIGHT * 0.03 + 100, WINDOW_WIDTH / 22, WINDOW_HEIGHT / 14};
   SDL_RenderCopy(pGame->pRenderer, bronzeTexture, NULL, &destRect3);
   // Render clown
   SDL_Surface* clown = IMG_Load("../lib/resources/clown.png");
   SDL_Texture* clownTexture = SDL_CreateTextureFromSurface(pGame->pRenderer, clown);
-  SDL_Rect destRect4 = {WINDOW_WIDTH * 0.005, WINDOW_HEIGHT * 0.03 + 150, WINDOW_HEIGHT / 14, WINDOW_HEIGHT / 14};
+  SDL_Rect destRect4 = {WINDOW_WIDTH * 0.005, WINDOW_HEIGHT * 0.03 + 150, WINDOW_WIDTH / 22, WINDOW_HEIGHT / 14};
   SDL_RenderCopy(pGame->pRenderer, clownTexture, NULL, &destRect4);
 
   SDL_FreeSurface(gold);
