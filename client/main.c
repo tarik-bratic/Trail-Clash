@@ -30,7 +30,7 @@ typedef struct game {
   // ITEM
   ItemImage *pItemImage[MAX_ITEMS];
   Item *pItems[MAX_ITEMS];
-  ItemData iData;
+  ItemData ciData;
 
   // TIMER
   int startTime;
@@ -152,8 +152,6 @@ int init_structure(Game *pGame) {
     return 0;
   }
 
-  init_Items(pGame); // seems to be working now?
-
   // Create all snakes
   init_allSnakes(pGame);
 
@@ -171,6 +169,7 @@ void run(Game *pGame) {
   int text_index = 0;
   int boostKey = 0;
   int nrOfItems = 0;
+  int items = 0;
   int replace;
 
   int closeRequest = 0;
@@ -193,25 +192,17 @@ void run(Game *pGame) {
           else input_handler(pGame, &event);
         }
 
-        if(pGame->iData.spawn == 1)
+        if(items==0)
         {
-          nrOfItems = spawnItem(pGame, nrOfItems);
+          init_Items(pGame);
+          items++;
         }
 
-        for (int j = 0; j < MAX_ITEMS; j++) {
-          if(collideSnake(pGame->pSnke[j],getRectItem(pGame->pItems[j]))) {
-              /*boostKey = 1;
-              pGame->startTime = 0;*/
-              updateItem(pGame->pItems[j]);
-              nrOfItems--;
-              replace = j;
-            }
-            /*if(boostKey>0) {
-              pGame->startTime++;
-              if(pGame->startTime==200) {
-                boostKey=0;
-              }
-            }*/
+        ItemData ciData;
+        memcpy(&ciData, pGame->pPacket->data, sizeof(ItemData));
+        if(ciData.spawn == 1)
+        {
+          nrOfItems = spawnItem(pGame, nrOfItems);
         }
 
         // Create an array of pointers to other snakes
@@ -227,8 +218,6 @@ void run(Game *pGame) {
 
           for (int j = 0; j < MAX_ITEMS; j++) {
           if(collideSnake(pGame->pSnke[i],getRectItem(pGame->pItems[j]))) {
-              /*boostKey = 1;
-              pGame->startTime = 0;*/
               updateItem(pGame->pItems[j]);
               nrOfItems--;
               replace = j;
@@ -354,15 +343,17 @@ void run(Game *pGame) {
 
 int init_Items(Game *pGame) {
   // creates Items and creates their image
+  ItemData ciData;
+
+  memcpy(&ciData, pGame->pPacket->data, sizeof(ItemData));
 
   SDL_SetRenderDrawColor(pGame->pRenderer, 0, 0, 0, 255);
   SDL_RenderClear(pGame->pRenderer);
   SDL_SetRenderDrawColor(pGame->pRenderer, 230, 230, 230, 255);
 
   for (int i = 0; i < MAX_ITEMS; i++) {
-    ItemData iData;
     pGame->pItemImage[i] = createItemImage(pGame->pRenderer);
-    pGame->pItems[i] = createItem(pGame->pItemImage[i], WINDOW_WIDTH, WINDOW_HEIGHT, 0, iData.xcoords, iData.xcoords);
+    pGame->pItems[i] = createItem(pGame->pItemImage[i], WINDOW_WIDTH, WINDOW_HEIGHT, 0, ciData.xcoords, ciData.ycoords);
   }
 
   for (int i = 0; i < MAX_ITEMS; i++) {
@@ -782,12 +773,16 @@ void render_snake(Game *pGame) {
 }
 
 int spawnItem(Game *pGame, int NrOfItems) {
+  ItemData ciData;
+
+  memcpy(&ciData, pGame->pPacket->data, sizeof(ItemData));
+
     if (NrOfItems != MAX_ITEMS) 
     {
       pGame->pItemImage[NrOfItems] = createItemImage(pGame->pRenderer);
-      pGame->pItems[NrOfItems] = createItem(pGame->pItemImage[NrOfItems], WINDOW_WIDTH, WINDOW_HEIGHT, 0, 500, 500);
+      pGame->pItems[NrOfItems] = createItem(pGame->pItemImage[NrOfItems], WINDOW_WIDTH, WINDOW_HEIGHT, 0, ciData.xcoords, ciData.ycoords);
       NrOfItems++;
-      pGame->iData.spawn = 0;
+      pGame->ciData.spawn = 0;
     }
   return NrOfItems;
 }

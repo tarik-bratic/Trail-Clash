@@ -111,8 +111,6 @@ int init_structure(Game *pGame) {
   // Create all snakes
   init_allSnakes(pGame);
 
-  //init_Items(pGame);
-
   // Establish server to client 
   if ( !(pGame->pSocket = SDLNet_UDP_Open(UDP_SERVER_PORT)) ) {
     printf("SDLNet_UDP_Open: %s\n", SDLNet_GetError());
@@ -175,6 +173,8 @@ void run(Game *pGame) {
           if (event.type == SDL_QUIT) closeRequest = 1;
         }
 
+        //nrOfItems = spawnItem(pGame, nrOfItems);
+
         // Create an array of pointers to other snakes
         for(int i = 0; i < MAX_SNKES; i++) {
 
@@ -185,8 +185,6 @@ void run(Game *pGame) {
           for (int j = 0; j < MAX_SNKES; j++) {
             if (j != i) otherSnakes[otherSnakesIndex++] = pGame->pSnke[j];
           }
-
-          nrOfItems = spawnItem(pGame, nrOfItems);
   
           // Update snake cord
           //update_snake(pGame->pSnke[i], otherSnakes, MAX_SNKES - 1, boostKey);
@@ -200,15 +198,14 @@ void run(Game *pGame) {
               nrOfItems--;
               replace = j;
             }
-            if(boostKey>0) {
+            if(boostKey[i]>0) {
               pGame->startTime++;
-              if(pGame->startTime==200) {
+              if(pGame->startTime==100) {
                 boostKey[i]=0;
               }
             }
-            update_snake(pGame->pSnke[i], otherSnakes, MAX_SNKES - 1, boostKey[i]);
           }
-          //update_snake(pGame->pSnke[i], otherSnakes, MAX_SNKES - 1, boostKey);
+          update_snake(pGame->pSnke[i], otherSnakes, MAX_SNKES - 1, boostKey[i]);
         }
 
         // Render snake
@@ -275,14 +272,14 @@ int init_Items(Game *pGame) {
 
 int spawnItem(Game *pGame, int NrOfItems)
 {
-  int spawn = rand() % 500;
+  int spawn = rand() % 50;
     if(spawn == 0)
     {
       if(NrOfItems!=MAX_ITEMS)
       {
         send_itemData(pGame, 1);
         pGame->pItemImage[NrOfItems] = createItemImage(pGame->pRenderer);
-        pGame->pItems[NrOfItems] = createItem(pGame->pItemImage[NrOfItems],WINDOW_WIDTH,WINDOW_HEIGHT, 0, 500, 500); 
+        pGame->pItems[NrOfItems] = createItem(pGame->pItemImage[NrOfItems],WINDOW_WIDTH,WINDOW_HEIGHT, 0, pGame->iData.xcoords, pGame->iData.xcoords); 
         NrOfItems++;
       }
     }
