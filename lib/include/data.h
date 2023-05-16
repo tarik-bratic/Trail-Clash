@@ -3,21 +3,26 @@
 
 /* CONST VERIABLES */
 #define PI 3.14
-#define MAX_ITEMS 1
-#define MAX_SNKES 2
+
+#define INPUT_BUFFER_SIZE 128
+
 #define POINT_SIZE 2
 #define WINDOW_WIDTH 900
 #define WINDOW_HEIGHT 560
-#define MAX_TRAIL_LENGTH 100
-#define INPUT_BUFFER_SIZE 128
-#define MAX_TRAIL_POINTS 100000000
+
+#define MAX_ITEMS 1
+#define MAX_SNKES 2
 #define MAX_ROUNDS 3
-#define DATA_SIZE 1028
+
+#define MAX_TRAIL_LENGTH 100
+#define MAX_TRAIL_POINTS 100000000
+
 #define UDP_SERVER_PORT 2000
 #define UDP_CLIENT_PORT 0
+#define DATA_SIZE 1028
 
 /* Game State struct */
-enum gameState { START, RUNNING };
+enum gameState { MENU, RUNNING };
 typedef enum gameState GameState;
 
 /* Game Scene struct */

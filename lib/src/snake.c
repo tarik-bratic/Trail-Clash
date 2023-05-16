@@ -76,7 +76,7 @@ void turn_right(Snake *pSnke) {
 }
 
 /* Update and set new cords and look if player is not outside of the screen */
-void update_snake(Snake *pSnke, Snake **otherSnakes, int nrOfSnakes, int key) {
+void update_snake(Snake *pSnke, Snake **otherSnakes, int nrOfSnakes) {
 
   // Changes distance between snake and trail
   float trail_offset = 8;
@@ -91,11 +91,6 @@ void update_snake(Snake *pSnke, Snake **otherSnakes, int nrOfSnakes, int key) {
     // Update coardinates
     pSnke->xCord += pSnke->xVel = 1.5 * sin(pSnke->angle * (2 * PI/360));
     pSnke->yCord += pSnke->yVel = -(1.5 * cos(pSnke->angle * (2 * PI/360)));
-
-    if(key == 1) {
-      pSnke->xCord += pSnke->xVel * 3;
-      pSnke->yCord += pSnke->yVel * 3;
-    }
     
     // Update snake hitbox to cover only the front part of the head
     pSnke->hitbox.x = pSnke->xCord + pSnke->snkeRect.w / 4;
