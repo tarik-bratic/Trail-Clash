@@ -168,7 +168,7 @@ void run(Game *pGame) {
   int send = 0;
   int text_index = 0;
   int boostKey = 0;
-  int nrOfItems = 0;
+  int nrOfItems = 1;
   int items = 0;
   int replace;
 
@@ -222,11 +222,9 @@ void run(Game *pGame) {
               nrOfItems--;
               replace = j;
             }
-        }
-  
+          }
           // Update snake cord, send data
           update_snake(pGame->pSnke[i], otherSnakes, MAX_SNKES - 1, boostKey);
-
         }
         
         // Render snake
@@ -338,7 +336,6 @@ void run(Game *pGame) {
   }
 
   disconnect_fromGame(pGame);
-
 }
 
 int init_Items(Game *pGame) {
@@ -776,14 +773,13 @@ int spawnItem(Game *pGame, int NrOfItems) {
   ItemData ciData;
 
   memcpy(&ciData, pGame->pPacket->data, sizeof(ItemData));
-
-    if (NrOfItems != MAX_ITEMS) 
-    {
-      pGame->pItemImage[NrOfItems] = createItemImage(pGame->pRenderer);
-      pGame->pItems[NrOfItems] = createItem(pGame->pItemImage[NrOfItems], WINDOW_WIDTH, WINDOW_HEIGHT, 0, ciData.xcoords, ciData.ycoords);
-      NrOfItems++;
-      pGame->ciData.spawn = 0;
-    }
+  if (NrOfItems != MAX_ITEMS) 
+  {
+    pGame->pItemImage[NrOfItems] = createItemImage(pGame->pRenderer);
+    pGame->pItems[NrOfItems] = createItem(pGame->pItemImage[NrOfItems], WINDOW_WIDTH, WINDOW_HEIGHT, 0, ciData.xcoords, ciData.ycoords);
+    NrOfItems++;
+    pGame->ciData.spawn = 0;
+  }
   return NrOfItems;
 }
 

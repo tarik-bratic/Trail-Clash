@@ -117,8 +117,8 @@ void update_snake(Snake *pSnke, Snake **otherSnakes, int nrOfSnakes, int key) {
     pSnke->yCord += pSnke->yVel = -(1.5 * cos(pSnke->angle * (2 * PI/360)));
 
     if(key==1){
-      pSnke->xCord += pSnke->xVel*3;
-      pSnke->yCord += pSnke->yVel*3;
+      pSnke->xCord += pSnke->xVel*0.5;
+      pSnke->yCord += pSnke->yVel*0.5;
     }
     
     // Check for collision
