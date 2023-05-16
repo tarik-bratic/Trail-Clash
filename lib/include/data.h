@@ -21,7 +21,7 @@ enum gameState { START, RUNNING };
 typedef enum gameState GameState;
 
 /* Game Scene struct */
-enum gameScene { MENU_SCENE, BUILD_SCENE, LOBBY_SCENE, GAME_SCENE };
+enum gameScene { MENU_SCENE, BUILD_SCENE, LOBBY_SCENE };
 typedef enum gameScene GameScene;
 
 /* Client Command struct */
@@ -32,14 +32,9 @@ typedef enum clientCommand ClientCommand;
 struct clientData {
     ClientCommand command;
     int snkeNumber;
-    char playerName[INPUT_BUFFER_SIZE];
+    char clientName[INPUT_BUFFER_SIZE];
 };
 typedef struct clientData ClientData;
-
-struct clientName {
-  char name[INPUT_BUFFER_SIZE];
-};
-typedef struct clientName ClientName;
 
 /* Snake Data struct */
 struct snakeData {
@@ -62,7 +57,6 @@ struct serverData {
     SnakeData snakes[MAX_SNKES];
     GameState gState;
     int maxClients;
-    int presentClients;
     char playerName[MAX_SNKES][INPUT_BUFFER_SIZE];
 
 };
@@ -94,12 +88,5 @@ struct snake {
 
 };
 typedef struct snake Snake;
-
-struct itemData {
-
-    int xcoords, ycoords;
-
-};
-typedef struct itemData ItemData;
 
 #endif

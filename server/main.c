@@ -25,8 +25,6 @@ typedef struct game {
 
   int roundCount;
 
-  ClientName cName[MAX_SNKES];
-
   // NETWORK
   UDPsocket pSocket;
   UDPpacket *pPacket;
@@ -60,7 +58,7 @@ void set_up_game(Game *pGame);
 void render_game(Game *pGame);
 void send_gameData(Game *pGame);
 void execute_command(Game *pGame, ClientData cData);
-void add_client(Game *pGame, ClientName cName[], IPaddress address, IPaddress clients[], int *pNumOfClients);
+void add_client(Game *pGame, IPaddress address, IPaddress clients[], int *pNumOfClients);
 
 int main(int argv, char** args) {
   
@@ -166,11 +164,11 @@ void run(Game *pGame) {
           for(int j = 0; j < MAX_ITEMS; j++) {
 
             if(collideSnake(pGame->pSnke[i], getRectItem(pGame->pItems[j]))) {
-            boostKey = 1;
-            pGame->startTime = 0;
-            updateItem(pGame->pItems[j]);
-            nrOfItems--;
-            replace = j;
+              boostKey = 1;
+              pGame->startTime = 0;
+              updateItem(pGame->pItems[j]);
+              nrOfItems--;
+              replace = j;
             }
 
             if(boostKey > 0) {
@@ -209,7 +207,7 @@ void run(Game *pGame) {
         if (SDLNet_UDP_Recv(pGame->pSocket, pGame->pPacket)) {
 
           if (cData.command != DISC) {
-            add_client(pGame, pGame->cName, pGame->pPacket->address, pGame->clients, &(pGame->connected_Clients));
+            add_client(pGame, pGame->pPacket->address, pGame->clients, &(pGame->connected_Clients));
 
             if (pGame->connected_Clients == MAX_SNKES) set_up_game(pGame);
           }
@@ -236,30 +234,27 @@ void set_up_game(Game *pGame) {
 
 /* Send data to Game Data to packet */
 void send_gameData(Game *pGame) {
-   
-    pGame->sData.gState = pGame->state;
 
-    for (int i = 0; i < MAX_SNKES; i++)
-      update_snakeData(pGame->pSnke[i], &(pGame->sData.snakes[i]));
+  pGame->sData.gState = pGame->state;
 
-    for (int i = 0; i < MAX_SNKES; i++) {
+  for (int i = 0; i < MAX_SNKES; i++)
+    update_snakeData(pGame->pSnke[i], &(pGame->sData.snakes[i]));
 
-      pGame->sData.snkeNum = i;
-      for (int j = 0; j < MAX_SNKES; j++) {
-        strcpy(pGame->sData.playerName[j], pGame->cName[j].name);
-      }
-      memcpy(pGame->pPacket->data, &(pGame->sData), sizeof(ServerData));
-		  pGame->pPacket->len = sizeof(ServerData);
-      pGame->pPacket->address = pGame->clients[i];
+  for (int i = 0; i < MAX_SNKES; i++) {
+
+    pGame->sData.snkeNum = i;
+    memcpy(pGame->pPacket->data, &(pGame->sData), sizeof(ServerData));
+		pGame->pPacket->len = sizeof(ServerData);
+    pGame->pPacket->address = pGame->clients[i];
       
-		  SDLNet_UDP_Send(pGame->pSocket, -1, pGame->pPacket);
+		SDLNet_UDP_Send(pGame->pSocket, -1, pGame->pPacket);
 
-    }
+  }
 
 }
 
 /* Add new clients to the server if they joined */
-void add_client(Game *pGame, ClientName cName[], IPaddress address, IPaddress clients[], int *pNumOfClients) {
+void add_client(Game *pGame, IPaddress address, IPaddress clients[], int *pNumOfClients) {
 
   ClientData cData;
 
@@ -269,10 +264,10 @@ void add_client(Game *pGame, ClientName cName[], IPaddress address, IPaddress cl
     if(address.host == clients[i].host && address.port == clients[i].port) return;
 
 	clients[*pNumOfClients] = address;
-  strcpy(cName[*pNumOfClients].name, cData.playerName);
+  strcpy(pGame->sData.playerName[*pNumOfClients], cData.clientName);
 	(*pNumOfClients)++;
 
-  printf("Client (%s) has joined...\n", cData.playerName);
+  printf("Client (%s) has joined...\n", cData.clientName);
 
 }
 
@@ -288,7 +283,7 @@ void execute_command(Game *pGame, ClientData cData) {
         break;
       case DISC:
         pGame->sData.maxClients -= 1;
-        printf("Client (%s) has disconnected...\n", cData.playerName);
+        printf("Client (%s) has disconnected...\n", cData.clientName);
       break;
     }
 
