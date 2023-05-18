@@ -210,11 +210,13 @@ static float distance(int x1, int y1, int x2, int y2) {
 void reset_snake(Snake *pSnke, int snakeNum) {
 
   pSnke->alive = 1;
-  pSnke->trailLength = 0;
   pSnke->trailCounter = 0;
   pSnke->snakeCollided = 0;
   pSnke->xVel=pSnke->yVel=0;
-  
+  pSnke->gapDuration = 100;
+  pSnke->gapTrailCounter = 0;
+  pSnke->spawnTrailPoints = 1;
+
   if (snakeNum == 0) {
     pSnke->xSrt = pSnke->xCord = pSnke->snkeRect.x = WINDOW_WIDTH / 4 + 50;
     pSnke->ySrt = pSnke->yCord = pSnke->snkeRect.y = WINDOW_HEIGHT / 4 - 80;
@@ -239,12 +241,13 @@ void reset_snake(Snake *pSnke, int snakeNum) {
     pSnke->angle = -50;
   }
 
-  for(int i = 0; i < MAX_TRAIL_POINTS; i++) {
+  for(int i = 0; i < pSnke->trailLength; i++) {
     pSnke->trailPoints[i].x = 0;
     pSnke->trailPoints[i].y = 0;
     pSnke->trailPoints[i].w = 0;
     pSnke->trailPoints[i].h = 0;
   }
+  pSnke->trailLength = 0;
 
 }
 

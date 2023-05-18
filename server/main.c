@@ -16,7 +16,13 @@
 /* Server Game struct */
 typedef struct game {
 
+  int deathCount;
+  int ctrlDeath[MAX_SNKES];
   int roundCount;
+  int showMess;
+  int firstStart;
+  int countdownCompleted;
+  int created;
 
   // SNAKE
   SDL_Window *pWindow;
@@ -74,9 +80,16 @@ int init_structure(Game *pGame) {
 
   // Default values
   pGame->state = MENU;
+  pGame->deathCount = 1;
   pGame->roundCount = 0;
   pGame->connected_Clients = 0;
   pGame->sData.maxClients = MAX_SNKES;
+  for (int i = 0; i < MAX_SNKES; i++)
+    pGame->ctrlDeath[i] = 0;
+  pGame->showMess = 0;
+  pGame->firstStart = 0;
+  pGame->countdownCompleted = 0;
+  pGame->created = 0;
 
   if ( !init_sdl_libraries() ) return 0; 
 
@@ -101,19 +114,15 @@ void run(Game *pGame) {
   SDL_Event event;
   ClientData cData;
 
-  int showMess = 0;
-  int firstStart = 0;
-  int countdownCompleted = 0;
-
   int closeRequest = 0;
   while(!closeRequest) {
     switch (pGame->state) {
       // The game is running
       case RUNNING:
 
-        if (showMess) {
+        if (pGame->showMess) {
           printf("Game state: Running\n");
-          showMess--;
+          pGame->showMess--;
         }
 
         create_snakePointers(pGame);
@@ -122,9 +131,9 @@ void run(Game *pGame) {
 
         render_game(pGame);
 
-        if (!firstStart) {
+        if (!pGame->firstStart) {
           SDL_Delay(3000);
-          firstStart++;
+          pGame->firstStart++;
         }
         
         // Update new recived data to client data
@@ -132,6 +141,8 @@ void run(Game *pGame) {
           memcpy(&cData, pGame->pPacket->data, sizeof(ClientData));
           execute_command(pGame, cData);
         }
+
+        if (pGame->collided == 1) reset_game(pGame);
 
         // All players has disconnected
         if (pGame->sData.maxClients == 0) closeRequest = 1;
@@ -143,22 +154,21 @@ void run(Game *pGame) {
 
         //Check if one Snake left, if so reset game and display winner (filip)
         collision_counter(pGame);
-        if (pGame->collided == 1) reset_game(pGame);
 
       break;
       // Waiting for all clients
       case MENU:
 
-        if (!showMess) {
+        if (!pGame->showMess) {
           printf("Game state: Start\n");
-          showMess++;
+          pGame->showMess++;
         }
 
         // Exit the program (ctrl + c) 
         if (SDL_PollEvent(&event) && event.type == SDL_QUIT) closeRequest = 1;
 
         // If new data recived add client
-        if (SDLNet_UDP_Recv(pGame->pSocket, pGame->pPacket)) {
+        if (SDLNet_UDP_Recv(pGame->pSocket, pGame->pPacket) && !pGame->created) {
 
           if (cData.command != DISC) {
             add_client(pGame, pGame->pPacket->address, pGame->clients, &(pGame->connected_Clients));
@@ -200,9 +210,12 @@ void set_up_game(Game *pGame) {
   printf("Setting up the game...\n");
 
   pGame->state = RUNNING;
+  pGame->created = 1;
 
-  for (int i = 0; i < MAX_SNKES; i++) 
+  for (int i = 0; i < MAX_SNKES; i++) {
     reset_snake(pGame->pSnke[i], i);
+    pGame->sData.died[i] = 0;
+  }
 
 }
 
@@ -217,6 +230,11 @@ void send_gameData(Game *pGame) {
   for (int i = 0; i < MAX_SNKES; i++) {
 
     pGame->sData.snkeNum = i;
+    if (pGame->pSnke[i]->snakeCollided && !pGame->ctrlDeath[i]) {
+      pGame->sData.died[i] += pGame->deathCount;
+      pGame->deathCount += 1;
+      pGame->ctrlDeath[i] = 1;
+    }
     memcpy(pGame->pPacket->data, &(pGame->sData), sizeof(ServerData));
 		pGame->pPacket->len = sizeof(ServerData);
     pGame->pPacket->address = pGame->clients[i];
@@ -284,7 +302,14 @@ void collision_counter(Game *pGame) {
     if (pGame->pSnke[i]->snakeCollided == 1) nrOfCollisions++;
   }
 
-  if (nrOfCollisions >= MAX_SNKES - 1) pGame->collided = 1;
+  if (nrOfCollisions >= MAX_SNKES - 1) {
+    pGame->collided = 1;
+    for (int i = 0; i < MAX_SNKES; i++) {
+      if (!pGame->pSnke[i]->snakeCollided) {
+        pGame->sData.died[i] += pGame->deathCount;
+      }
+    }
+  }
 
 }
 
@@ -293,15 +318,27 @@ void reset_game(Game *pGame) {
   
   for (int i = 0; i < MAX_SNKES; i++) {
     reset_snake(pGame->pSnke[i], i);
+    pGame->ctrlDeath[i] = 0;
   }
 
   pGame->collided = 0;
   pGame->roundCount++;
+  pGame->deathCount = 1;
 
   if(pGame->roundCount == MAX_ROUNDS){
     pGame->state = MENU;
+    pGame->created = 0;
+    pGame->deathCount = 1;
     pGame->roundCount = 0;
     pGame->connected_Clients = 0;
+    pGame->sData.maxClients = MAX_SNKES;
+    for (int i = 0; i < MAX_SNKES; i++) {
+      pGame->ctrlDeath[i] = 0;
+      pGame->sData.died[i] = 0;
+    }
+    pGame->showMess = 0;
+    pGame->firstStart = 0;
+    pGame->countdownCompleted = 0;
   } else {
     SDL_Delay(3000);
   }

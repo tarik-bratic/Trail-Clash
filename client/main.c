@@ -18,9 +18,13 @@ typedef struct game {
   char ipAddr[INPUT_BUFFER_SIZE];
   char myName[INPUT_BUFFER_SIZE];
   char SnakeNames[MAX_SNKES][INPUT_BUFFER_SIZE];
+  char scoreText[MAX_SNKES][2];
+  int scoreNum[MAX_SNKES];
 
   int roundCount;
-  int render;
+  int recInfo;
+  int firstStart;
+  int textIndex;
 
   SDL_Window *pWindow;
   SDL_Renderer *pRenderer;
@@ -38,9 +42,9 @@ typedef struct game {
 
   // UI
   TTF_Font *pStrdFont, *pTitleBigFont, *pTitleSmallFont, *pNameFont, *pNumberFont;
-  Text *pInGameTitle, *pTitleBigText, *pTitleSmallText, *pStartText, *pStartDark, *pQuitText, *pQuitDark, 
-  *pListPlayers, *pSelectText, *pContinueText, *pBackText, *pWaitingText, *pMessIP, *pMessName, *pSnkeName, *pBoardText,
-  *pBoardInfo, *pNumThree, *pNumTwo, *pNumOne;
+  Text *pInGameTitle, *pTitleBigText, *pTitleSmallText, *pStartText, *pStartDark, *pQuitText, *pQuitDark,
+  *pSelectText, *pContinueText, *pBackText, *pWaitingText, *pMessIP, *pMessName, *pSnkeName, *pBoardText,
+  *pBoardInfo, *pNumThree, *pNumTwo, *pNumOne, *pScoreText, *pRoundNum, *pRoundText, *pWinner;
 
   // NETWORK
   UDPsocket pSocket;
@@ -67,8 +71,11 @@ void input_handler(Game *pGame, SDL_Event *pEvent);
 void render_game(Game *pGame);
 void render_elements(Game *pGame);
 void render_background(Game *pGame);
-int render_scene(Game *pGame, int index);
+int render_scene(Game *pGame);
 void looby(Game *pGame);
+void winner(Game *pGame);
+void find_winner(Game *pGame);
+void render_round(Game *pGame);
 void highlight_text(Game *pGame, int index);
 void disconnect(Game *pGame);
 int conn_server(Game *pGame);
@@ -104,7 +111,11 @@ int init_structure(Game *pGame) {
   pGame->scene = MENU_SCENE;
   pGame->curentClients = 0;
   pGame->roundCount = 0;
-  pGame->render = 0;
+  pGame->recInfo = 0;
+  pGame->firstStart = 0;
+  pGame->textIndex = 0;
+  for (int i = 0; i < MAX_SNKES; i++)
+    pGame->scoreNum[i] = 0;
 
   if ( !init_sdl_libraries() ) return 0;
 
@@ -134,34 +145,33 @@ void run(Game *pGame) {
   SDL_Event event;
   ClientData cData;
 
-  int text_index = 0;
-  int firstStart = 0;
-  int recvPlayerInfo = 0;
-
   int closeRequest = 0;
   while(!closeRequest) {
     switch (pGame->state) {
       // The game is running
       case RUNNING:
 
-        create_snakePointers(pGame);
-
-        if (!recvPlayerInfo) {
+        if (!pGame->recInfo) {
           update_PlayerInfo(pGame);
-          recvPlayerInfo++;
+          pGame->recInfo++;
         }
 
-        render_game(pGame);
+        create_snakePointers(pGame);
 
-        if (!firstStart) {
+        if (!pGame->firstStart) {
+          render_game(pGame);
           countDown(pGame);
-          firstStart++;
+          pGame->firstStart++;
         }
 
         // Update new recived data
         while(SDLNet_UDP_Recv(pGame->pSocket, pGame->pPacket)) {
           update_ServerData(pGame);
         }
+
+        render_game(pGame);
+
+        if (pGame->collided == 1) reset_game(pGame);
 
         // Looking if there is an input
         if (SDL_PollEvent(&event)) {
@@ -179,13 +189,12 @@ void run(Game *pGame) {
 
         //Check if one Snake left, if so reset game and display winner (filip)
         collision_counter(pGame);
-        if (pGame->collided == 1) reset_game(pGame);
 
       break;
       // Main Menu
       case MENU:
 
-        if ( !render_scene(pGame, text_index) ) closeRequest = 1;
+        if ( !render_scene(pGame) ) closeRequest = 1;
         
         // Looking if there is an input
         if (SDL_PollEvent(&event)) {
@@ -196,25 +205,25 @@ void run(Game *pGame) {
             // Arrow up, W
             if (event.key.keysym.scancode == SDL_SCANCODE_UP || event.key.keysym.scancode == SDL_SCANCODE_W) {
               Mix_PlayMusic(pGame->pClickSound, 0);
-              text_index -= 1;
-              if (text_index < 0) text_index = 0;
+              pGame->textIndex -= 1;
+              if (pGame->textIndex < 0) pGame->textIndex = 0;
             }
 
             // Arrow down, S
             if (event.key.keysym.scancode == SDL_SCANCODE_DOWN || event.key.keysym.scancode == SDL_SCANCODE_S) {
               Mix_PlayMusic(pGame->pClickSound, 0);
-              text_index += 1;
-              if (text_index > 1) text_index = 1;
+              pGame->textIndex += 1;
+              if (pGame->textIndex > 1) pGame->textIndex = 1;
             }
 
             // Select content (Space)
             if (event.key.keysym.scancode == SDL_SCANCODE_SPACE) {
               Mix_PlayMusic(pGame->pSelectSound, 0);
               // START GAME
-              if (text_index == 0) pGame->scene = BUILD_SCENE;
+              if (pGame->textIndex == 0) pGame->scene = BUILD_SCENE;
 
               // QUIT
-              if (text_index == 1) closeRequest = 1;
+              if (pGame->textIndex == 1) closeRequest = 1;
             }
 
           }
@@ -272,7 +281,7 @@ void create_snakePointers(Game *pGame) {
 }
 
 /* Show the selected scene */
-int render_scene(Game *pGame, int index) {
+int render_scene(Game *pGame) {
 
   switch (pGame->scene) {
     case MENU_SCENE:
@@ -281,7 +290,7 @@ int render_scene(Game *pGame, int index) {
       draw_text(pGame->pTitleSmallText);
       draw_text(pGame->pTitleBigText);
       // Highligt specific content
-      highlight_text(pGame, index);
+      highlight_text(pGame, pGame->textIndex);
     break;
     case BUILD_SCENE:
       if ( !build_handler(pGame) ) return 0;
@@ -289,12 +298,63 @@ int render_scene(Game *pGame, int index) {
     case LOBBY_SCENE:
       looby(pGame);
     break;
+    case WINNER_SCENE:
+      winner(pGame);
+    break;
   }
 
   // Update screen
   SDL_RenderPresent(pGame->pRenderer);
 
   return 1;
+
+}
+
+void winner(Game *pGame) {
+
+  SDL_Event event;
+
+  draw_interface(pGame);
+  find_winner(pGame);
+
+  SDL_RenderPresent(pGame->pRenderer);
+
+  SDL_Delay(5000);
+  pGame->scene = MENU_SCENE;
+
+}
+
+void find_winner(Game *pGame) {
+
+  int maxNum = 0;
+  int minNum = 0;
+  int player = 0;
+  for(int i = 0; i < MAX_SNKES; i++) {
+    for(int j = 0; j < MAX_SNKES; j++) {
+      if (minNum < pGame->scoreNum[i]) {
+        minNum = pGame->scoreNum[i];
+        player = i;
+      }
+      if (maxNum < minNum) {
+        maxNum = minNum;
+        player = player;
+      }
+    }
+  }
+
+  char Winner[INPUT_BUFFER_SIZE] = "";
+  strcat(Winner, "The Winner is ");
+  strcat(Winner, pGame->SnakeNames[player]);
+
+  pGame->pWinner = create_text(pGame->pRenderer, 255, 255, 255, pGame->pStrdFont,
+    Winner, (WINDOW_WIDTH + 205) / 2, WINDOW_HEIGHT / 2);
+
+  if (!pGame->pWinner) {
+    printf("Error: %s\n", SDL_GetError());
+    close(pGame);
+  }
+
+  draw_text(pGame->pWinner);
 
 }
 
@@ -406,7 +466,7 @@ void highlight_text(Game *pGame, int index) {
 
 /* Render scene lobby */
 void looby(Game *pGame) {
-  render_elements(pGame);
+  render_background(pGame);
   draw_text(pGame->pWaitingText);
 }
 
@@ -739,6 +799,7 @@ void update_PlayerInfo(Game *pGame) {
   memcpy(&sData, pGame->pPacket->data, sizeof(ServerData));
   for (int i = 0; i < MAX_SNKES; i++) {
     strcpy(pGame->SnakeNames[i], sData.playerName[i]);
+    strcpy(pGame->scoreText[i], "0");
   }
 
 }
@@ -754,6 +815,8 @@ void update_ServerData(Game *pGame) {
 
   for (int i = 0; i < MAX_SNKES; i++) {
     update_recived_snake_data(pGame->pSnke[i], &(sData.snakes[i]));
+    sprintf(pGame->scoreText[i], "%d", sData.died[i]);
+    pGame->scoreNum[i] = sData.died[i];
   }
 
 }
@@ -785,15 +848,25 @@ void draw_interface(Game* pGame) {
   SDL_SetRenderDrawColor(pGame->pRenderer, 58, 103, 131, 255);
   SDL_RenderFillRect(pGame->pRenderer, &field_rect);
 
-  // Render the leaderboard
+  if (pGame->scene != WINNER_SCENE) render_round(pGame);
+
+  // Render "Player - P"
   draw_text(pGame->pBoardInfo);
+
+  // Render the leaderboard
   for(int i = 0; i < MAX_SNKES; i++) {
 
     SDL_SetRenderDrawColor(pGame->pRenderer, 255, 255, 255, 255);
-    SDL_RenderDrawLine(pGame->pRenderer, 13, 46 + txtY, 185, 46 + txtY);
+    SDL_RenderDrawLine(pGame->pRenderer, 13, 61 + txtY, 185, 61 + txtY);
     
+    char strInfo[INPUT_BUFFER_SIZE] = "";
+
+    strcat(strInfo, pGame->SnakeNames[i]);
+    strcat(strInfo, " - ");
+    strcat(strInfo, pGame->scoreText[i]);
+
     pGame->pBoardText = create_text(pGame->pRenderer, 255, 255, 255, pGame->pStrdFont,
-    pGame->SnakeNames[i], 55, 65 + txtY);
+      strInfo, (WINDOW_WIDTH - 695) / 2, 85 + txtY);
 
     if (!pGame->pBoardText) {
       printf("Error: %s\n", SDL_GetError());
@@ -801,10 +874,33 @@ void draw_interface(Game* pGame) {
     }
 
     draw_text(pGame->pBoardText);
-    txtY += 35;
+    txtY += 45;
 
   }
   
+}
+
+/* Render what current round the players are playing */
+void render_round(Game *pGame) {
+
+  char round[10] = "";
+  sprintf(round, "%d", pGame->roundCount + 1);
+  strcat(round, "/3");
+
+  pGame->pRoundText = create_text(pGame->pRenderer, 255, 255, 255, pGame->pStrdFont,
+    "Round", (WINDOW_WIDTH - 695) / 2, WINDOW_HEIGHT- 120);
+
+  pGame->pRoundNum = create_text(pGame->pRenderer, 255, 255, 255, pGame->pNumberFont,
+    round, (WINDOW_WIDTH - 695) / 2, WINDOW_HEIGHT - 70);
+
+  if (!pGame->pRoundNum || !pGame->pRoundText) {
+    printf("Error: %s\n", SDL_GetError());
+    close(pGame);
+  }
+
+  draw_text(pGame->pRoundText);
+  draw_text(pGame->pRoundNum);
+
 }
 
 /* Checks nrOfCollisions, if 1 snake alive sets collided to 1 */
@@ -826,13 +922,18 @@ void reset_game(Game *pGame) {
     reset_snake(pGame->pSnke[i], i);
   }
 
-  pGame->roundCount++;
+  pGame->roundCount += 1;
   pGame->collided = 0;
 
-  if(pGame->roundCount == MAX_ROUNDS) {
-    pGame->scene = MENU_SCENE;
+  if (pGame->roundCount == MAX_ROUNDS) {
     pGame->state = MENU;
+    pGame->scene = WINNER_SCENE;
+    pGame->curentClients = 0;
     pGame->roundCount = 0;
+    pGame->recInfo = 0;
+    pGame->firstStart = 0;
+    pGame->textIndex = 0;
+    Mix_PauseMusic();
   } else {
     countDown(pGame);
   }
@@ -898,7 +999,7 @@ int create_allText(Game *pGame) {
     "Enter Player Name", WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 - 135);
 
   pGame->pBoardInfo = create_text(pGame->pRenderer, 255, 255, 255, pGame->pStrdFont,
-    "Player  -  P", (WINDOW_WIDTH - 695) / 2, 25);
+    "Player - P", (WINDOW_WIDTH - 695) / 2, 35);
 
   pGame->pNumThree = create_text(pGame->pRenderer, 255, 255, 255, pGame->pNumberFont,
     "3", (WINDOW_WIDTH + 205) / 2, WINDOW_HEIGHT / 2);
@@ -1028,6 +1129,12 @@ void close(Game *pGame) {
   if (pGame->pNumThree) destroy_text(pGame->pNumThree);
   if (pGame->pNumTwo) destroy_text(pGame->pNumTwo);
   if (pGame->pNumOne) destroy_text(pGame->pNumOne);
+  if (pGame->pRoundText) destroy_text(pGame->pRoundText);
+  if (pGame->pRoundNum) destroy_text(pGame->pRoundNum);
+  if (pGame->pSelectText) destroy_text(pGame->pSelectText);
+  if (pGame->pContinueText) destroy_text(pGame->pContinueText);
+  if (pGame->pScoreText) destroy_text(pGame->pScoreText);
+  if (pGame->pWinner) destroy_text(pGame->pWinner);
 
   // Close fonts
   if (pGame->pTitleSmallFont) TTF_CloseFont(pGame->pTitleSmallFont);

@@ -11,7 +11,7 @@
 #define WINDOW_HEIGHT 560
 
 #define MAX_ITEMS 1
-#define MAX_SNKES 2
+#define MAX_SNKES 4
 #define MAX_ROUNDS 3
 
 #define MAX_TRAIL_LENGTH 100
@@ -26,7 +26,7 @@ enum gameState { MENU, RUNNING };
 typedef enum gameState GameState;
 
 /* Game Scene struct */
-enum gameScene { MENU_SCENE, BUILD_SCENE, LOBBY_SCENE };
+enum gameScene { MENU_SCENE, BUILD_SCENE, LOBBY_SCENE, WINNER_SCENE };
 typedef enum gameScene GameScene;
 
 /* Client Command struct */
@@ -63,6 +63,7 @@ struct serverData {
     GameState gState;
     int maxClients;
     char playerName[MAX_SNKES][INPUT_BUFFER_SIZE];
+    int died[MAX_SNKES];
 
 };
 typedef struct serverData ServerData;
