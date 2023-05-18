@@ -11,7 +11,7 @@
 #define WINDOW_HEIGHT 560
 
 #define MAX_ITEMS 1
-#define MAX_SNKES 2
+#define MAX_SNKES 3
 #define MAX_ROUNDS 3
 
 #define MAX_TRAIL_LENGTH 100
