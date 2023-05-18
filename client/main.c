@@ -159,6 +159,7 @@ void run(Game *pGame) {
         create_snakePointers(pGame);
 
         if (!pGame->firstStart) {
+          render_game(pGame);
           countDown(pGame);
           pGame->firstStart++;
         }
