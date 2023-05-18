@@ -160,7 +160,6 @@ void run(Game *pGame) {
 
         if (!pGame->firstStart) {
           countDown(pGame);
-          draw_interface(pGame);
           pGame->firstStart++;
         }
 
@@ -423,6 +422,8 @@ void render_elements(Game *pGame) {
 
 /* Render things for the game to the window */
 void render_game(Game *pGame) {
+
+  draw_interface(pGame);
 
   for (int i = 0; i < MAX_SNKES; i++) {
     draw_snake(pGame->pSnke[i]);
