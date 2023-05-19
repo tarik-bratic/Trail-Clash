@@ -35,22 +35,24 @@ typedef enum clientCommand ClientCommand;
 
 /* Client Data struct */
 struct clientData {
-    ClientCommand command;
-    int snkeNumber;
-    char clientName[INPUT_BUFFER_SIZE];
+
+  ClientCommand command;
+  int snkeNumber;
+  char clientName[INPUT_BUFFER_SIZE];
+
 };
 typedef struct clientData ClientData;
 
 /* Snake Data struct */
 struct snakeData {
 
-    float xCord, yCord;
-    float xVel, yVel;
-    int angle, alive;
-    int trailLength;
-    int trailCounter;
-    int snakeCollided;
-    int color;
+  float xCord, yCord;
+  float xVel, yVel;
+  int angle, alive;
+  int trailLength;
+  int trailCounter;
+  int snakeCollided;
+  int color;
 
 };
 typedef struct snakeData SnakeData; 
@@ -58,15 +60,24 @@ typedef struct snakeData SnakeData;
 /* Server Data struct */
 struct serverData {
 
-    int snkeNum;
-    SnakeData snakes[MAX_SNKES];
-    GameState gState;
-    int maxClients;
-    char playerName[MAX_SNKES][INPUT_BUFFER_SIZE];
-    int died[MAX_SNKES];
+  int snkeNum;
+  SnakeData snakes[MAX_SNKES];
+  GameState gState;
+  int maxClients;
+  char playerName[MAX_SNKES][INPUT_BUFFER_SIZE];
+  int died[MAX_SNKES];
 
 };
 typedef struct serverData ServerData;
+
+struct itemData {
+
+  int xcoords;
+  int ycoords;
+  int spawn;
+
+};
+typedef struct itemData ItemData;
 
 /* Snake stuct  */
 struct snake {

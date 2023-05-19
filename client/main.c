@@ -10,6 +10,7 @@
 #include "../lib/include/init.h"
 #include "../lib/include/data.h"
 #include "../lib/include/text.h"
+#include "../lib/include/item.h"
 #include "../lib/include/snake.h"
 
 /* Client Game struct */
@@ -38,7 +39,7 @@ typedef struct game {
   int snkeID;
 
   // SOUND & AUDIO
-  Mix_Music *pClickSound, *pSelectSound, *pMusic;
+  Mix_Music *pClickSound, *pSelectSound, *pMusic, *pWinSound;
 
   // UI
   TTF_Font *pStrdFont, *pTitleBigFont, *pTitleSmallFont, *pNameFont, *pNumberFont;
@@ -52,6 +53,16 @@ typedef struct game {
   IPaddress serverAdd;
   int curentClients;
 
+  // ITEM
+  ItemImage *pItemImage[MAX_ITEMS];
+  Item *pItems[MAX_ITEMS];
+  ItemData ciData;
+
+  int boostKey;
+  int nrOfItems;
+  int items;
+  int replace;
+
   GameState state;
   GameScene scene;
 
@@ -61,6 +72,8 @@ int init_structure(Game *pGame);
 void run(Game *pGame);
 void close(Game *pGame);
 
+int init_Items(Game *pGame);
+int spawnItem(Game *pGame, int nrOfItems);
 int init_Music(Game *pGame);
 int init_image(Game *pGame);
 int create_allFonts(Game *pGame);
@@ -114,18 +127,21 @@ int init_structure(Game *pGame) {
   pGame->recInfo = 0;
   pGame->firstStart = 0;
   pGame->textIndex = 0;
+  pGame->boostKey = 0;
+  pGame->nrOfItems = 1;
+  pGame->items = 0;
   for (int i = 0; i < MAX_SNKES; i++)
     pGame->scoreNum[i] = 0;
 
   if ( !init_sdl_libraries() ) return 0;
-
-  if ( !init_Music(pGame) ) return 0;
 
   pGame->pWindow = client_wind("Trail Clash", pGame->pWindow);
   if ( !pGame->pWindow ) close(pGame);
 
   pGame->pRenderer = create_render(pGame->pRenderer, pGame->pWindow);
   if ( !pGame->pRenderer) close(pGame);
+
+  if ( !init_Music(pGame) ) return 0;
 
   if ( !init_image(pGame) ) return 0;
 
@@ -151,9 +167,24 @@ void run(Game *pGame) {
       // The game is running
       case RUNNING:
 
+        // Update new recived data
+        while(SDLNet_UDP_Recv(pGame->pSocket, pGame->pPacket)) {
+          update_ServerData(pGame);
+        }
+
         if (!pGame->recInfo) {
           update_PlayerInfo(pGame);
           pGame->recInfo++;
+        }
+
+        if (!pGame->items) {
+          init_Items(pGame);
+          pGame->items++;
+        }
+        
+        memcpy(&(pGame->ciData), pGame->pPacket->data, sizeof(ItemData));
+        if(pGame->ciData.spawn == 1) {
+          pGame->nrOfItems = spawnItem(pGame, pGame->nrOfItems);
         }
 
         create_snakePointers(pGame);
@@ -162,11 +193,6 @@ void run(Game *pGame) {
           render_game(pGame);
           countDown(pGame);
           pGame->firstStart++;
-        }
-
-        // Update new recived data
-        while(SDLNet_UDP_Recv(pGame->pSocket, pGame->pPacket)) {
-          update_ServerData(pGame);
         }
 
         render_game(pGame);
@@ -241,6 +267,46 @@ void run(Game *pGame) {
 
 }
 
+/* Creates Items and creates their image */
+int init_Items(Game *pGame) {
+
+  memcpy(&(pGame->ciData), pGame->pPacket->data, sizeof(ItemData));
+
+  SDL_SetRenderDrawColor(pGame->pRenderer, 0, 0, 0, 255);
+  SDL_RenderClear(pGame->pRenderer);
+  SDL_SetRenderDrawColor(pGame->pRenderer, 230, 230, 230, 255);
+
+  for (int i = 0; i < MAX_ITEMS; i++) {
+    pGame->pItemImage[i] = createItemImage(pGame->pRenderer);
+    pGame->pItems[i] = createItem(pGame->pItemImage[i], WINDOW_WIDTH, WINDOW_HEIGHT, 0, pGame->ciData.xcoords, pGame->ciData.ycoords);
+  }
+
+  for (int i = 0; i < MAX_ITEMS; i++) {
+    if (!pGame->pItemImage[i] || !pGame->pItems[i]) {
+      printf("Error: %s", SDL_GetError());
+      close(pGame);
+      return 0;
+    }
+  }
+
+}
+
+/* Spawn an item to the game */
+int spawnItem(Game *pGame, int NrOfItems) {
+
+  memcpy(&(pGame->ciData), pGame->pPacket->data, sizeof(ItemData));
+
+  if (NrOfItems != MAX_ITEMS) {
+    pGame->pItemImage[NrOfItems] = createItemImage(pGame->pRenderer);
+    pGame->pItems[NrOfItems] = createItem(pGame->pItemImage[NrOfItems], WINDOW_WIDTH, WINDOW_HEIGHT, 0, pGame->ciData.xcoords, pGame->ciData.ycoords);
+    NrOfItems++;
+    pGame->ciData.spawn = 0;
+  }
+
+  return NrOfItems;
+
+}
+
 void countDown(Game *pGame) {
 
   draw_text(pGame->pNumThree);
@@ -272,9 +338,17 @@ void create_snakePointers(Game *pGame) {
     for (int j = 0; j < MAX_SNKES; j++) {
       if (j != i) otherSnakes[otherSnakesIndex++] = pGame->pSnke[j];
     }
+
+    for (int j = 0; j < MAX_ITEMS; j++) {
+      if ( collideSnake(pGame->pSnke[i], getRectItem(pGame->pItems[j])) ) {
+        updateItem(pGame->pItems[j]);
+        pGame->nrOfItems--;
+        pGame->replace = j;
+      }
+    }
   
     // Update snake cord, send data
-    update_snake(pGame->pSnke[i], otherSnakes, MAX_SNKES - 1);
+    update_snake(pGame->pSnke[i], otherSnakes, MAX_SNKES - 1, pGame->boostKey);
 
   }
 
@@ -318,6 +392,8 @@ void winner(Game *pGame) {
   find_winner(pGame);
 
   SDL_RenderPresent(pGame->pRenderer);
+
+  Mix_PlayMusic(pGame->pWinSound, 0);
 
   SDL_Delay(5000);
   pGame->scene = MENU_SCENE;
@@ -933,6 +1009,10 @@ void reset_game(Game *pGame) {
     pGame->recInfo = 0;
     pGame->firstStart = 0;
     pGame->textIndex = 0;
+    pGame->textIndex = 0;
+    pGame->boostKey = 0;
+    pGame->nrOfItems = 1;
+    pGame->items = 0;
     Mix_PauseMusic();
   } else {
     countDown(pGame);
@@ -943,11 +1023,11 @@ void reset_game(Game *pGame) {
 /* Create own font with create_font function. Value is stored in a Text pointer. */
 int create_allFonts(Game *pGame) {
 
-  pGame->pTitleBigFont = create_font(pGame->pTitleBigFont, "../lib/resources/ATW.ttf", 150);
-  pGame->pTitleSmallFont = create_font(pGame->pTitleSmallFont, "../lib/resources/ATW.ttf", 110);
-  pGame->pNumberFont = create_font(pGame->pStrdFont, "../lib/resources/PixeloidSansBold-PKnYd.ttf", 50);
-  pGame->pStrdFont = create_font(pGame->pStrdFont, "../lib/resources/PixeloidSansBold-PKnYd.ttf", 25);
-  pGame->pNameFont = create_font(pGame->pNameFont, "../lib/resources/PixeloidSansBold-PKnYd.ttf", 15);
+  pGame->pTitleBigFont = create_font(pGame->pTitleBigFont, "../lib/resources/fonts/ATW.ttf", 150);
+  pGame->pTitleSmallFont = create_font(pGame->pTitleSmallFont, "../lib/resources/fonts/ATW.ttf", 110);
+  pGame->pNumberFont = create_font(pGame->pStrdFont, "../lib/resources/fonts/PixeloidSansBold-PKnYd.ttf", 50);
+  pGame->pStrdFont = create_font(pGame->pStrdFont, "../lib/resources/fonts/PixeloidSansBold-PKnYd.ttf", 25);
+  pGame->pNameFont = create_font(pGame->pNameFont, "../lib/resources/fonts/PixeloidSansBold-PKnYd.ttf", 15);
 
   if (!pGame->pNumberFont || !pGame->pNameFont || !pGame->pTitleBigFont || !pGame->pTitleSmallFont || !pGame->pStrdFont) {
     printf("Error: %s\n", SDL_GetError());
@@ -1045,9 +1125,9 @@ int init_allSnakes(Game *pGame) {
 /* Initiate image load */
 int init_image(Game *pGame) {
 
-  pGame->pSpaceSurface = IMG_Load("../lib/resources/space.png");
-  pGame->pEnterSurface = IMG_Load("../lib/resources/enter.png");
-  pGame->pEscSurface = IMG_Load("../lib/resources/esc.png");
+  pGame->pSpaceSurface = IMG_Load("../lib/resources/pictures/space.png");
+  pGame->pEnterSurface = IMG_Load("../lib/resources/pictures/enter.png");
+  pGame->pEscSurface = IMG_Load("../lib/resources/pictures/esc.png");
   if (!pGame->pSpaceSurface || !pGame->pEnterSurface || !pGame->pEscSurface) {
     SDL_FreeSurface(pGame->pSpaceSurface);
     SDL_FreeSurface(pGame->pEnterSurface);
@@ -1084,11 +1164,12 @@ int init_Music(Game *pGame) {
     SDL_Quit();
     return 0;
   }
-  pGame->pClickSound = Mix_LoadMUS("../lib/resources/click_sound.wav");
-  pGame->pSelectSound = Mix_LoadMUS("../lib/resources/select_sound.wav");
-  pGame->pMusic = Mix_LoadMUS("../lib/resources/game_music.mp3");
+  pGame->pClickSound = Mix_LoadMUS("../lib/resources/sounds/click_sound.wav");
+  pGame->pSelectSound = Mix_LoadMUS("../lib/resources/sounds/select_sound.wav");
+  pGame->pWinSound = Mix_LoadMUS("../lib/resources/sounds/win_sound.wav");
+  pGame->pMusic = Mix_LoadMUS("../lib/resources/sounds/game_music.mp3");
 
-  if(!pGame->pMusic || !pGame->pClickSound || !pGame->pSelectSound) {
+  if(!pGame->pMusic || !pGame->pClickSound || !pGame->pSelectSound || !pGame->pWinSound) {
     printf("Failed to load music: %s\n", Mix_GetError());
     Mix_CloseAudio();
     Mix_Quit();
@@ -1103,6 +1184,11 @@ void close(Game *pGame) {
 
   for (int i = 0; i < MAX_SNKES; i++) 
     if (pGame->pSnke[i]) destroy_snake(pGame->pSnke[i]);
+
+  for (int i = 0; i < MAX_ITEMS; i++) {
+    if (pGame->pItems[i]) destroyItem(pGame->pItems[i]);
+    if (pGame->pItemImage[i]) destroyItemImage(pGame->pItemImage[i]);
+  }
 
   if (pGame->pSpaceTexture) SDL_DestroyTexture(pGame->pSpaceTexture);
   if (pGame->pEnterTexture) SDL_DestroyTexture(pGame->pEnterTexture);
@@ -1146,6 +1232,7 @@ void close(Game *pGame) {
   // Free music
   Mix_FreeMusic(pGame->pClickSound); 
   Mix_FreeMusic(pGame->pSelectSound);
+  Mix_FreeMusic(pGame->pWinSound);
   Mix_FreeMusic(pGame->pMusic);
   Mix_CloseAudio();
   Mix_Quit();

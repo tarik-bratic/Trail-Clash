@@ -12,10 +12,10 @@ int check_collision_with_other_snakes(Snake *pSnke, Snake **otherSnakes, int nrO
 
 char *snakeColors[] = {
   
-  "../lib/resources/redSquare.png",
-  "../lib/resources/blueSquare.png",
-  "../lib/resources/greenSquare.png",
-  "../lib/resources/yellowSquare.png",
+  "../lib/resources/pictures/redSquare.png",
+  "../lib/resources/pictures/blueSquare.png",
+  "../lib/resources/pictures/greenSquare.png",
+  "../lib/resources/pictures/yellowSquare.png",
 
 };
 
@@ -76,7 +76,7 @@ void turn_right(Snake *pSnke) {
 }
 
 /* Update and set new cords and look if player is not outside of the screen */
-void update_snake(Snake *pSnke, Snake **otherSnakes, int nrOfSnakes) {
+void update_snake(Snake *pSnke, Snake **otherSnakes, int nrOfSnakes, int key) {
 
   // Changes distance between snake and trail
   float trail_offset = 8;
@@ -97,6 +97,11 @@ void update_snake(Snake *pSnke, Snake **otherSnakes, int nrOfSnakes) {
     pSnke->hitbox.y = pSnke->yCord + pSnke->snkeRect.h / 4;
     pSnke->hitbox.w = pSnke->snkeRect.w / 2;
     pSnke->hitbox.h = pSnke->snkeRect.h / 2;
+
+    if (key == 1) {
+      pSnke->xCord += pSnke->xVel * 0.5;
+      pSnke->yCord += pSnke->yVel * 0.5;
+    }
 
     // Check for collision
     check_and_handle_collision(pSnke, otherSnakes, nrOfSnakes);
