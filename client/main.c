@@ -361,6 +361,8 @@ void find_winner(Game *pGame) {
 
   }
 
+  printf("Num: %d\n", maxNum);
+
   // Render the winner
   char Winner[INPUT_BUFFER_SIZE] = "";
   strcat(Winner, "The Winner is ");
