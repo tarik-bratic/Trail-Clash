@@ -1,13 +1,14 @@
-#include <math.h>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
-#include "../include/data.h"
 #include "../include/snake.h"
+#include "../include/game_data.h"
+
+static float distance(int x1, int y1, int x2, int y2);
 
 void check_outOfBounds(Snake *pSnke);
-int check_collision_with_self(Snake *pSnke);
-static float distance(int x1, int y1, int x2, int y2);
 void check_and_handle_collision(Snake *pSnke, Snake **otherSnakes, int nrOfSnakes);
+
+int check_collision_with_self(Snake *pSnke);
 int check_collision_with_other_snakes(Snake *pSnke, Snake **otherSnakes, int nrOfSnakes);
 
 char *snakeColors[] = {
@@ -38,14 +39,14 @@ Snake *create_snake(SDL_Renderer *pRenderer, int number, int color) {
   pSnke->wind_Width = WINDOW_WIDTH;
   pSnke->wind_Height = WINDOW_HEIGHT;
 
-  // Load desired image
+  // Load snake color
   SDL_Surface *pSurface = IMG_Load(snakeColors[color]);
   if (!pSurface) {
       printf("Error: %s\n", SDL_GetError());
       return NULL;
   }
 
-  // Create texture
+  // Create texture for the snake
   pSnke->pRenderer = pRenderer;
   pSnke->pTexture = SDL_CreateTextureFromSurface(pRenderer, pSurface);
   SDL_FreeSurface(pSurface);
@@ -137,22 +138,22 @@ void update_snake(Snake *pSnke, Snake **otherSnakes, int nrOfSnakes) {
 void check_outOfBounds(Snake *pSnke) {
 
   // Check if snake goes beyond left or right wall
-    if (pSnke->xCord < WINDOW_WIDTH - 695) {
-      pSnke->xCord = WINDOW_WIDTH - 695;
-      pSnke->snakeCollided = 1;
-    } else if (pSnke->xCord > (pSnke->wind_Width - pSnke->snkeRect.w) - 5) {
-      pSnke->xCord = (pSnke->wind_Width - pSnke->snkeRect.w) - 5;
-      pSnke->snakeCollided = 1;
-    }
+  if (pSnke->xCord < WINDOW_WIDTH - 695) {
+    pSnke->xCord = WINDOW_WIDTH - 695;
+    pSnke->snakeCollided = 1;
+  } else if (pSnke->xCord > (pSnke->wind_Width - pSnke->snkeRect.w) - 5) {
+    pSnke->xCord = (pSnke->wind_Width - pSnke->snkeRect.w) - 5;
+    pSnke->snakeCollided = 1;
+  }
 
-    // Check if snake goes beyond top or bottom wall
-    if (pSnke->yCord < 5) {
-      pSnke->yCord = 5;
+  // Check if snake goes beyond top or bottom wall
+  if (pSnke->yCord < 5) {
+    pSnke->yCord = 5;
       pSnke->snakeCollided = 1;
-    } else if (pSnke->yCord > (pSnke->wind_Height - pSnke->snkeRect.h) - 5) {
-      pSnke->yCord = (pSnke->wind_Height - pSnke->snkeRect.h) - 5;
-      pSnke->snakeCollided = 1;
-    }
+  } else if (pSnke->yCord > (pSnke->wind_Height - pSnke->snkeRect.h) - 5) {
+    pSnke->yCord = (pSnke->wind_Height - pSnke->snkeRect.h) - 5;
+    pSnke->snakeCollided = 1;
+  }
 
 }
 
@@ -169,14 +170,14 @@ int check_collision_with_self(Snake *pSnke) {
 }
 
 /* If a collision with other snake trails has occured return true, else false */
-int check_collision_with_other_snakes(Snake *pSnke, Snake **otherSnakes, int nrOfSnakes) {
+int check_collision_with_other_snakes(Snake *pSnke, Snake **otherSnakes, int numOfSnkes) {
 
-  for (int s = 0; s < nrOfSnakes; s++) {
+  for (int i = 0; i < numOfSnkes; i++) {
 
-    Snake *otherSnake = otherSnakes[s];
+    Snake *otherSnake = otherSnakes[i];
 
-    for (int i = 0; i < otherSnake->trailLength; i++) {
-      SDL_Rect *trailRect = &otherSnake->trailPoints[i];
+    for (int j = 0; j < otherSnake->trailLength; j++) {
+      SDL_Rect *trailRect = &otherSnake->trailPoints[j];
       if (SDL_HasIntersection(&(pSnke->snkeRect), trailRect)) return 1;
     }
 
@@ -186,7 +187,7 @@ int check_collision_with_other_snakes(Snake *pSnke, Snake **otherSnakes, int nrO
 
 }
 
-/* The snake has collided */
+/* VAD GÖR DEN HÄR FUNKTIONEN */
 void check_and_handle_collision(Snake *pSnke, Snake **otherSnakes, int nrOfSnakes) {
 
   if (check_collision_with_self(pSnke) || check_collision_with_other_snakes(pSnke, otherSnakes, nrOfSnakes)) {
@@ -195,13 +196,13 @@ void check_and_handle_collision(Snake *pSnke, Snake **otherSnakes, int nrOfSnake
 
 }
 
-/* Snake has collided */
+/* VAD GÖR DEN HÄR FUNKTIONEN */
 int collideSnake(Snake *pSnake, SDL_Rect rect){
     return distance(pSnake->snkeRect.x + pSnake->snkeRect.w / 2, pSnake->snkeRect.y + pSnake->snkeRect.h / 2, 
       rect.x + rect.w / 2, rect.y + rect.h / 2) < (pSnake->snkeRect.w + rect.w) / 2;
 }
 
-/* The distance */
+/* VAD GÖR DEN HÄR FUNKTIONEN */
 static float distance(int x1, int y1, int x2, int y2) {
     return sqrt((x2-x1) * (x2-x1) + (y2-y1) * (y2-y1));
 }
@@ -212,8 +213,8 @@ void reset_snake(Snake *pSnke, int snakeNum) {
   pSnke->alive = 1;
   pSnke->trailCounter = 0;
   pSnke->snakeCollided = 0;
-  pSnke->xVel=pSnke->yVel=0;
   pSnke->gapDuration = 100;
+  pSnke->xVel=pSnke->yVel=0;
   pSnke->gapTrailCounter = 0;
   pSnke->spawnTrailPoints = 1;
 
@@ -247,55 +248,65 @@ void reset_snake(Snake *pSnke, int snakeNum) {
     pSnke->trailPoints[i].w = 0;
     pSnke->trailPoints[i].h = 0;
   }
+  
   pSnke->trailLength = 0;
 
 }
 
 /* Render a copy of a snake */
 void draw_snake(Snake *pSnke) {
-  if(!pSnke->snakeCollided){
+
+  if(!pSnke->snakeCollided) {
     SDL_RenderCopyEx(pSnke->pRenderer, pSnke->pTexture, NULL, &(pSnke->snkeRect), pSnke->angle, NULL, SDL_FLIP_NONE);
   }
+
 }
 
 /* Render the trail behind the player */
 void draw_trail(Snake *pSnke) {
+
   SDL_SetRenderDrawColor(pSnke->pRenderer, trailColors[pSnke->color].r, trailColors[pSnke->color].g, 
     trailColors[pSnke->color].b, trailColors[pSnke->color].a);
 
-  for (int i = 0; i < pSnke->trailLength; i++) {
+  for (int i = 0; i < pSnke->trailLength; i++)
     SDL_RenderFillRect(pSnke->pRenderer, &pSnke->trailPoints[i]);
-  }
+
 }
 
 /* Destory snake texture and free memory */
 void destroy_snake(Snake *pSnke) {
+
     SDL_DestroyTexture(pSnke->pTexture);
     free(pSnke);
+
 }
 
 /* Update data Snake -> SnakeData */
 void update_snakeData(Snake *pSnke, SnakeData *pSnkeData) {
-    pSnkeData->alive = pSnke->alive;
-    pSnkeData->angle = pSnke->angle;
+
     pSnkeData->xVel = pSnke->xVel;
     pSnkeData->yVel = pSnke->yVel;
+    pSnkeData->alive = pSnke->alive;
+    pSnkeData->angle = pSnke->angle;
     pSnkeData->xCord = pSnke->xCord;
     pSnkeData->yCord = pSnke->yCord;
-    pSnkeData->snakeCollided = pSnke->snakeCollided;
-    pSnkeData->trailCounter = pSnke->trailCounter;
     pSnkeData->trailLength = pSnke->trailLength;
+    pSnkeData->trailCounter = pSnke->trailCounter;
+    pSnkeData->snakeCollided = pSnke->snakeCollided;
+
 }
 
 /* Update data SnakeData -> Snake */
 void update_recived_snake_data(Snake *pSnke, SnakeData *pSnkeData) {
-    pSnke->alive = pSnkeData->alive;
-    pSnke->angle = pSnkeData->angle;
+    
     pSnke->xVel = pSnkeData->xVel;
     pSnke->yVel = pSnkeData->yVel;
+    pSnke->alive = pSnkeData->alive;
+    pSnke->angle = pSnkeData->angle;
     pSnke->xCord = pSnkeData->xCord;
     pSnke->yCord = pSnkeData->yCord;
-    pSnke->snakeCollided = pSnkeData->snakeCollided;
-    pSnke->trailCounter = pSnkeData->trailCounter;
     pSnke->trailLength = pSnkeData->trailLength;
+    pSnke->trailCounter = pSnkeData->trailCounter;
+    pSnke->snakeCollided = pSnkeData->snakeCollided;
+    
 }

@@ -1,41 +1,39 @@
-#include <time.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <windows.h>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
 #include <SDL2/SDL_net.h>
-#include <SDL2/SDL_timer.h>
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL_mixer.h>
-#include "../lib/include/data.h"
 #include "../lib/include/text.h"
-#include "../lib/include/init.h"
 #include "../lib/include/snake.h"
+#include "../lib/include/sdl_init.h"
+#include "../lib/include/game_data.h"
 
 /* Server Game struct */
 typedef struct game {
 
   int deathCount;
   int ctrlDeath[MAX_SNKES];
-  int roundCount;
-  int showMess;
-  int firstStart;
-  int countdownCompleted;
+
+  // FLAGS
   int created;
+  int showMess;
+  int roundCount;
+  int firstStart;
 
   // SNAKE
   SDL_Window *pWindow;
   SDL_Renderer *pRenderer;
   Snake *pSnke[MAX_SNKES];
-  int collided;
+  int collision;
 
   // NETWORK
   UDPsocket pSocket;
   UDPpacket *pPacket;
   IPaddress clients[MAX_SNKES];
   ServerData sData;
-  int connected_Clients;
+  int connectedClients;
 
   GameState state;
 
@@ -48,7 +46,7 @@ void close(Game *pGame);
 int init_allSnakes(Game *pGame);
 void finish_game(Game *pGame);
 int create_server(Game *pGame);
-void reset_game(Game *pGame);
+void new_game(Game *pGame);
 void set_up_game(Game *pGame);
 void render_game(Game *pGame);
 void send_gameData(Game *pGame);
@@ -77,20 +75,21 @@ int main(int argv, char** args) {
 /* Initialize structe of the game with SDL libraries and other attributes */
 int init_structure(Game *pGame) {
 
-  srand(time(NULL));
-
   // Default values
   pGame->state = MENU;
-  pGame->deathCount = 1;
-  pGame->roundCount = 0;
-  pGame->connected_Clients = 0;
+
+  pGame->connectedClients = 0;
   pGame->sData.maxClients = MAX_SNKES;
+
+  pGame->roundCount = 0;
+
+  pGame->deathCount = 1;
   for (int i = 0; i < MAX_SNKES; i++)
     pGame->ctrlDeath[i] = 0;
+  
+  pGame->created = 0;
   pGame->showMess = 0;
   pGame->firstStart = 0;
-  pGame->countdownCompleted = 0;
-  pGame->created = 0;
 
   if ( !init_sdl_libraries() ) return 0; 
 
@@ -121,16 +120,12 @@ void run(Game *pGame) {
       // The game is running
       case RUNNING:
 
-        if (pGame->showMess) {
-          printf("Game state: Running\n");
-          pGame->showMess--;
-        }
-
         create_snakePointers(pGame);
         
         send_gameData(pGame);
 
         if (!pGame->firstStart) {
+          printf("Game state: Running\n");
           render_game(pGame);
           SDL_Delay(3000);
           pGame->firstStart++;
@@ -144,7 +139,7 @@ void run(Game *pGame) {
 
         render_game(pGame);
 
-        if (pGame->collided == 1) reset_game(pGame);
+        if (pGame->collision == 1) new_game(pGame);
 
         // All players has disconnected
         if (pGame->sData.maxClients == 0) closeRequest = 1;
@@ -156,10 +151,6 @@ void run(Game *pGame) {
 
         //Check if one Snake left, if so reset game and display winner (filip)
         collision_counter(pGame);
-
-        if (pGame->roundCount == MAX_ROUNDS) {
-          
-        }
 
       break;
       // Waiting for all clients
@@ -177,9 +168,9 @@ void run(Game *pGame) {
         if (SDLNet_UDP_Recv(pGame->pSocket, pGame->pPacket) && !pGame->created) {
 
           if (cData.command != DISC) {
-            add_client(pGame, pGame->pPacket->address, pGame->clients, &(pGame->connected_Clients));
+            add_client(pGame, pGame->pPacket->address, pGame->clients, &(pGame->connectedClients));
 
-            if (pGame->connected_Clients == MAX_SNKES) set_up_game(pGame);
+            if (pGame->connectedClients == MAX_SNKES) set_up_game(pGame);
           }
 
         }
@@ -195,16 +186,15 @@ void create_snakePointers(Game *pGame) {
 
   for(int i = 0; i < MAX_SNKES; i++) {
 
-    Snake *otherSnakes[MAX_SNKES - 1];
-    int otherSnakesIndex = 0;
+    int oppIndex = 0;
+    Snake *opponents[MAX_SNKES - 1];
 
     // Looping through all the other snakes to add them to the array
-    for (int j = 0; j < MAX_SNKES; j++) {
-      if (j != i) otherSnakes[otherSnakesIndex++] = pGame->pSnke[j];
-    }
+    for (int j = 0; j < MAX_SNKES; j++)
+      if (j != i) opponents[oppIndex++] = pGame->pSnke[j];
   
     // Update snake cord, send data
-    update_snake(pGame->pSnke[i], otherSnakes, MAX_SNKES - 1);
+    update_snake(pGame->pSnke[i], opponents, MAX_SNKES - 1);
 
   }
 
@@ -229,19 +219,18 @@ void finish_game(Game *pGame) {
 
   printf("Leaving the game...\n");
 
-  pGame->state = MENU;
   pGame->created = 0;
+  pGame->state = MENU;
+  pGame->showMess = 0;
+  pGame->firstStart = 0;
   pGame->deathCount = 1;
   pGame->roundCount = 0;
-  pGame->connected_Clients = 0;
+  pGame->connectedClients = 0;
   pGame->sData.maxClients = MAX_SNKES;
   for (int i = 0; i < MAX_SNKES; i++) {
     pGame->ctrlDeath[i] = 0;
     pGame->sData.died[i] = 0;
   }
-  pGame->showMess = 0;
-  pGame->firstStart = 0;
-  pGame->countdownCompleted = 0;
 
 }
 
@@ -261,6 +250,7 @@ void send_gameData(Game *pGame) {
       pGame->deathCount += 1;
       pGame->ctrlDeath[i] = 1;
     }
+
     memcpy(pGame->pPacket->data, &(pGame->sData), sizeof(ServerData));
 		pGame->pPacket->len = sizeof(ServerData);
     pGame->pPacket->address = pGame->clients[i];
@@ -319,43 +309,40 @@ void render_game(Game *pGame) {
 
 }
 
-/* Checks nrOfCollisions, if 1 snake alive sets collided to 1 */
+/* Check if there is one snake left alive to trigger flag collision to 1 */
 void collision_counter(Game *pGame) {
 
-  int nrOfCollisions = 0;
+  int numOfCollisions = 0;
 
-  for (int i = 0; i < MAX_SNKES; i++) {
-    if (pGame->pSnke[i]->snakeCollided == 1) nrOfCollisions++;
-  }
+  for (int i = 0; i < MAX_SNKES; i++)
+    if (pGame->pSnke[i]->snakeCollided == 1) numOfCollisions++;
 
-  if (nrOfCollisions >= MAX_SNKES - 1) {
-    pGame->collided = 1;
-    for (int i = 0; i < MAX_SNKES; i++) {
-      if (!pGame->pSnke[i]->snakeCollided) {
-        pGame->sData.died[i] += pGame->deathCount;
-      }
-    }
+  if (numOfCollisions >= MAX_SNKES - 1) {
+
+    pGame->collision = 1;
+    for (int i = 0; i < MAX_SNKES; i++)
+      if (!pGame->pSnke[i]->snakeCollided) pGame->sData.died[i] += pGame->deathCount;
+
   }
 
 }
 
-/* Checks nrOfCollisions, if 1 snake alive sets collided to 1 */
-void reset_game(Game *pGame) {
+/* Check if a new round should start or to display the winner */
+void new_game(Game *pGame) {
+
+  pGame->roundCount++;
+  pGame->collision = 0;
+  pGame->deathCount = 1;
   
   for (int i = 0; i < MAX_SNKES; i++) {
     reset_snake(pGame->pSnke[i], i);
     pGame->ctrlDeath[i] = 0;
   }
 
-  pGame->collided = 0;
-  pGame->roundCount++;
-  pGame->deathCount = 1;
-
   if(pGame->roundCount == MAX_ROUNDS){
     finish_game(pGame);
-  } else {
-    SDL_Delay(3000);
-  }
+  } 
+  else SDL_Delay(3000);
 
 }
 

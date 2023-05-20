@@ -1,13 +1,7 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
 #include "../include/text.h"
-
-/* text struct */
-struct text {
-    SDL_Rect txtRect;
-    SDL_Texture *pTexture;
-    SDL_Renderer *pRenderer;
-};
+#include "../include/game_data.h"
 
 /** 
  * Allocate a pointer and create a text with the desired content
@@ -68,6 +62,8 @@ void draw_text(Text *pText) {
 
 /* Destory text texture and free memory */
 void destroy_text(Text *pText) {
+
     SDL_DestroyTexture(pText->pTexture);
     free(pText);
+
 }

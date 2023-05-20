@@ -1,17 +1,17 @@
-#ifndef data_h
-#define data_h
+#ifndef game_data_h
+#define game_data_h
 
 /* CONST VERIABLES */
 #define PI 3.14
 
-#define INPUT_BUFFER_SIZE 128
+#define INPUT_BUFFER_SIZE 16
 
 #define POINT_SIZE 2
 #define WINDOW_WIDTH 900
 #define WINDOW_HEIGHT 560
 
 #define MAX_ITEMS 1
-#define MAX_SNKES 3
+#define MAX_SNKES 4
 #define MAX_ROUNDS 3
 
 #define MAX_TRAIL_LENGTH 100
@@ -96,5 +96,15 @@ struct snake {
 
 };
 typedef struct snake Snake;
+
+/* Text struct */
+struct text {
+
+    SDL_Rect txtRect;
+    SDL_Texture *pTexture;
+    SDL_Renderer *pRenderer;
+
+};
+typedef struct text Text;
 
 #endif
