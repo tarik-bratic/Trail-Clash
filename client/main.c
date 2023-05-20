@@ -361,8 +361,6 @@ void find_winner(Game *pGame) {
 
   }
 
-  printf("Num: %d\n", maxNum);
-
   // Render the winner
   char Winner[INPUT_BUFFER_SIZE] = "";
   strcat(Winner, "The Winner is ");
@@ -830,9 +828,8 @@ void update_ServerData(Game *pGame) {
 
   for (int i = 0; i < MAX_SNKES; i++) {
     update_recived_snake_data(pGame->pSnke[i], &(sData.snakes[i]));
-    // sprintf(pGame->scoreText[i], "%d", sData.died[i]);
+    sprintf(pGame->scoreText[i], "%d", sData.died[i]);
     pGame->scoreNum[i] = sData.died[i];
-    sprintf(pGame->scoreText[i], "%d", pGame->scoreNum[i]);
   }
 
 }
@@ -879,6 +876,7 @@ void draw_interface(Game* pGame) {
 
     strcat(strInfo, pGame->playerNames[i]);
     strcat(strInfo, " - ");
+    sprintf(pGame->scoreText[i], "%d", pGame->scoreNum[i]);
     strcat(strInfo, pGame->scoreText[i]);
 
     pGame->pBoardText = create_text(pGame->pRenderer, 255, 255, 255, pGame->pStrdFont,
