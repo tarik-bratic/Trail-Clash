@@ -157,6 +157,8 @@ void run(Game *pGame) {
   SDL_Event event;
   ClientData cData;
 
+  cData.command = DISC;
+
   int closeRequest = 0;
   while(!closeRequest) {
     switch (pGame->state) {
@@ -931,6 +933,9 @@ void collision_counter(Game *pGame) {
 /* Function to display the winner and reset values to default */
 void finish_game(Game *pGame) {
 
+  ClientData cData;
+
+  cData.command = DISC;
   pGame->initStart = 0;
   pGame->textIndex = 0;
   pGame->textIndex = 0;

@@ -268,8 +268,6 @@ void add_client(Game *pGame, IPaddress address, IPaddress clients[], int *pNumOf
 
   memcpy(&cData, pGame->pPacket->data, sizeof(ClientData));
 
-  if (strcmp(cData.clientName, "")) return;
-
 	for (int i = 0; i < *pNumOfClients; i++) 
     if(address.host == clients[i].host && address.port == clients[i].port) return;
 
