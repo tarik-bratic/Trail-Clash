@@ -76,7 +76,7 @@ void turn_right(Snake *pSnke) {
 }
 
 /* Update and set new cords and look if player is not outside of the screen */
-void update_snake(Snake *pSnke, Snake **otherSnakes, int nrOfSnakes, int key) {
+void update_snake(Snake *pSnke, Snake **otherSnakes, int nrOfSnakes) {
 
   // Changes distance between snake and trail
   float trail_offset = 8;
@@ -97,11 +97,6 @@ void update_snake(Snake *pSnke, Snake **otherSnakes, int nrOfSnakes, int key) {
     pSnke->hitbox.y = pSnke->yCord + pSnke->snkeRect.h / 4;
     pSnke->hitbox.w = pSnke->snkeRect.w / 2;
     pSnke->hitbox.h = pSnke->snkeRect.h / 2;
-
-    if (key == 1) {
-      pSnke->xCord += pSnke->xVel * 0.5;
-      pSnke->yCord += pSnke->yVel * 0.5;
-    }
 
     // Check for collision
     check_and_handle_collision(pSnke, otherSnakes, nrOfSnakes);
