@@ -232,8 +232,6 @@ void finish_game(Game *pGame) {
     pGame->sData.died[i] = 0;
   }
 
-  SDL_Delay(5000);
-
 }
 
 /* Send data to Game Data to packet */
