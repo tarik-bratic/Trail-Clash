@@ -157,8 +157,6 @@ void run(Game *pGame) {
   SDL_Event event;
   ClientData cData;
 
-  cData.command = DISC;
-
   int closeRequest = 0;
   while(!closeRequest) {
     switch (pGame->state) {
@@ -878,7 +876,6 @@ void draw_interface(Game* pGame) {
 
     strcat(strInfo, pGame->playerNames[i]);
     strcat(strInfo, " - ");
-    sprintf(pGame->scoreText[i], "%d", pGame->scoreNum[i]);
     strcat(strInfo, pGame->scoreText[i]);
 
     pGame->pBoardText = create_text(pGame->pRenderer, 255, 255, 255, pGame->pStrdFont,
@@ -933,9 +930,6 @@ void collision_counter(Game *pGame) {
 /* Function to display the winner and reset values to default */
 void finish_game(Game *pGame) {
 
-  ClientData cData;
-
-  cData.command = DISC;
   pGame->initStart = 0;
   pGame->textIndex = 0;
   pGame->textIndex = 0;
