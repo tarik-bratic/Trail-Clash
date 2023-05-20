@@ -31,7 +31,6 @@ typedef struct game {
   // FLAGS
   int initStart;
   int textIndex;
-  int connect;
 
   // IMAGES
   SDL_Texture *pSpaceTexture, *pEnterTexture, *pEscTexture;
@@ -120,7 +119,6 @@ int init_structure(Game *pGame) {
   pGame->textIndex = 0;
   pGame->roundCount = 0;
   pGame->currentClients = 0;
-  pGame->connect = 0;
 
   for (int i = 0; i < MAX_SNKES; i++)
     pGame->scoreNum[i] = 0;
@@ -230,7 +228,6 @@ void run(Game *pGame) {
             // Select content (Space)
             if (event.key.keysym.scancode == SDL_SCANCODE_SPACE) {
               Mix_PlayMusic(pGame->pSelectSound, 0);
-              pGame->connect = 1;
               // START GAME
               if (pGame->textIndex == 0) pGame->scene = BUILD_SCENE;
 
@@ -749,7 +746,7 @@ int build_handler(Game *pGame) {
   strcpy(pGame->myName, clientName);
 
   // Has not exited build_handler function
-  if (!ESC && pGame->connect) {
+  if (!ESC) {
     if ( !init_connection(pGame) ) return 0;
     clientCommand(pGame, 1);
   }
@@ -933,7 +930,6 @@ void collision_counter(Game *pGame) {
 /* Function to display the winner and reset values to default */
 void finish_game(Game *pGame) {
 
-  pGame->connect = 0;
   pGame->initStart = 0;
   pGame->textIndex = 0;
   pGame->textIndex = 0;
