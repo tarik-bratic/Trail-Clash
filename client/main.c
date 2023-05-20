@@ -830,8 +830,9 @@ void update_ServerData(Game *pGame) {
 
   for (int i = 0; i < MAX_SNKES; i++) {
     update_recived_snake_data(pGame->pSnke[i], &(sData.snakes[i]));
-    sprintf(pGame->scoreText[i], "%d", sData.died[i]);
+    // sprintf(pGame->scoreText[i], "%d", sData.died[i]);
     pGame->scoreNum[i] = sData.died[i];
+    sprintf(pGame->scoreText[i], "%d", pGame->scoreNum[i]);
   }
 
 }
