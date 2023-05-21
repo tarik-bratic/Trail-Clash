@@ -962,7 +962,7 @@ int init_allFonts(Game *pGame) {
 
   pGame->pTitleBigFont = create_font(pGame->pTitleBigFont, "../lib/resources/fonts/ATW.ttf", 150);
   pGame->pTitleSmallFont = create_font(pGame->pTitleSmallFont, "../lib/resources/fonts/ATW.ttf", 110);
-  pGame->pNumberFont = create_font(pGame->pStrdFont, "../lib/resources/fonts/PixeloidSansBold-PKnYd.ttf", 50);
+  pGame->pNumberFont = create_font(pGame->pNumberFont, "../lib/resources/fonts/PixeloidSansBold-PKnYd.ttf", 50);
   pGame->pStrdFont = create_font(pGame->pStrdFont, "../lib/resources/fonts/PixeloidSansBold-PKnYd.ttf", 25);
   pGame->pNameFont = create_font(pGame->pNameFont, "../lib/resources/fonts/PixeloidSansBold-PKnYd.ttf", 15);
 
