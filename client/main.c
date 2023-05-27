@@ -1,52 +1,60 @@
-#include <time.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
 #include <SDL2/SDL_net.h>
-#include <SDL2/SDL_timer.h>
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL_mixer.h>
-#include "../lib/include/init.h"
-#include "../lib/include/data.h"
 #include "../lib/include/text.h"
 #include "../lib/include/snake.h"
+#include "../lib/include/sdl_init.h"
+#include "../lib/include/game_data.h"
 
 /* Client Game struct */
 typedef struct game {
 
   char ipAddr[INPUT_BUFFER_SIZE];
   char myName[INPUT_BUFFER_SIZE];
-  char SnakeNames[MAX_SNKES][INPUT_BUFFER_SIZE];
+
+  // NAME OF EVERY PLAYER
+  char playerNames[MAX_SNKES][INPUT_BUFFER_SIZE];
+
+  // THE SCORE
+  int scoreNum[MAX_SNKES];
+  char scoreText[MAX_SNKES][2];
 
   int roundCount;
-  int render;
 
   SDL_Window *pWindow;
   SDL_Renderer *pRenderer;
 
+  // FLAGS
+  int initStart;
+  int textIndex;
+
+  // IMAGES
   SDL_Texture *pSpaceTexture, *pEnterTexture, *pEscTexture;
   SDL_Surface *pSpaceSurface, *pEnterSurface, *pEscSurface;
 
   // SNAKE
   Snake *pSnke[MAX_SNKES];
-  int collided;
+  int collision;
   int snkeID;
 
-  // SOUND & AUDIO
-  Mix_Music *pClickSound, *pSelectSound, *pMusic;
+  // SOUND
+  Mix_Music *pClickSound, *pSelectSound, *pMusic, *pWinSound;
 
   // UI
   TTF_Font *pStrdFont, *pTitleBigFont, *pTitleSmallFont, *pNameFont, *pNumberFont;
-  Text *pInGameTitle, *pTitleBigText, *pTitleSmallText, *pStartText, *pStartDark, *pQuitText, *pQuitDark, 
-  *pListPlayers, *pSelectText, *pContinueText, *pBackText, *pWaitingText, *pMessIP, *pMessName, *pSnkeName, *pBoardText,
-  *pBoardInfo, *pNumThree, *pNumTwo, *pNumOne;
+  Text *pInGameTitle, *pTitleBigText, *pTitleSmallText, *pStartText, *pStartDark, *pQuitText, *pQuitDark,
+  *pSelectText, *pContinueText, *pBackText, *pWaitingText, *pMessIP, *pMessName, *pSnkeName, *pBoardText,
+  *pBoardInfo, *pNumThree, *pNumTwo, *pNumOne, *pScoreText, *pRoundNum, *pRoundText, *pWinner;
 
   // NETWORK
   UDPsocket pSocket;
   UDPpacket *pPacket;
   IPaddress serverAdd;
-  int curentClients;
+  int currentClients;
 
   GameState state;
   GameScene scene;
@@ -59,26 +67,30 @@ void close(Game *pGame);
 
 int init_Music(Game *pGame);
 int init_image(Game *pGame);
-int create_allFonts(Game *pGame);
-int create_allText(Game *pGame);
+int init_allFonts(Game *pGame);
+int init_allText(Game *pGame);
 int init_allSnakes(Game *pGame);
 int build_handler(Game *pGame);
+int init_connection(Game *pGame);
+int render_scene(Game *pGame);
+
 void input_handler(Game *pGame, SDL_Event *pEvent);
 void render_game(Game *pGame);
 void render_elements(Game *pGame);
 void render_background(Game *pGame);
-int render_scene(Game *pGame, int index);
 void looby(Game *pGame);
+void winner(Game *pGame);
+void find_winner(Game *pGame);
+void finish_game(Game *pGame);
+void render_round(Game *pGame);
 void highlight_text(Game *pGame, int index);
-void disconnect(Game *pGame);
-int conn_server(Game *pGame);
 void update_ServerData(Game *pGame);
-void reset_game(Game *pGame);
+void new_game(Game *pGame);
 void draw_interface(Game* pGame);
 void collision_counter(Game *pGame);
-void clientReady(Game *pGame);
+void clientCommand(Game *pGame, int command);
 void draw_snakeName(Game *pGame, int i);
-void update_PlayerInfo(Game *pGame);
+void update_Names(Game *pGame);
 void create_snakePointers(Game *pGame);
 void countDown(Game *pGame);
 
@@ -87,7 +99,9 @@ int main(int argv, char** args) {
   Game g = { 0 };
 
   if ( !init_structure(&g) ) return 1;
+
   run(&g);
+
   close(&g);
 
   return 0;
@@ -97,18 +111,20 @@ int main(int argv, char** args) {
 /* Initialize structe of the game with SDL libraries and other attributes */
 int init_structure(Game *pGame) {
 
-  srand(time(NULL));
-
   // Default values
   pGame->state = MENU;
   pGame->scene = MENU_SCENE;
-  pGame->curentClients = 0;
+
+  pGame->initStart = 0;
+  pGame->textIndex = 0;
   pGame->roundCount = 0;
-  pGame->render = 0;
+  pGame->currentClients = 0;
 
+  for (int i = 0; i < MAX_SNKES; i++)
+    pGame->scoreNum[i] = 0;
+
+  // Init everthing needed
   if ( !init_sdl_libraries() ) return 0;
-
-  if ( !init_Music(pGame) ) return 0;
 
   pGame->pWindow = client_wind("Trail Clash", pGame->pWindow);
   if ( !pGame->pWindow ) close(pGame);
@@ -116,27 +132,30 @@ int init_structure(Game *pGame) {
   pGame->pRenderer = create_render(pGame->pRenderer, pGame->pWindow);
   if ( !pGame->pRenderer) close(pGame);
 
+  if ( !init_Music(pGame) ) return 0;
+
   if ( !init_image(pGame) ) return 0;
 
   if ( !init_allSnakes(pGame) ) return 0;
 
-  if ( !create_allFonts(pGame) ) return 0;
+  if ( !init_allFonts(pGame) ) return 0;
 
-  if ( !create_allText(pGame) ) return 0;
+  if ( !init_allText(pGame) ) return 0;
 
   return 1;
 
 }
 
-/* Main loop of the game. Updates the snakes attributes. Looking for input. Sends and recives new data. */
+/** 
+ * Main loop of the game. 
+ * Updates the snakes attributes. 
+ * Looking for input. 
+ * Sends and recives new data. 
+*/
 void run(Game *pGame) {
 
   SDL_Event event;
   ClientData cData;
-
-  int text_index = 0;
-  int firstStart = 0;
-  int recvPlayerInfo = 0;
 
   int closeRequest = 0;
   while(!closeRequest) {
@@ -146,16 +165,12 @@ void run(Game *pGame) {
 
         create_snakePointers(pGame);
 
-        if (!recvPlayerInfo) {
-          update_PlayerInfo(pGame);
-          recvPlayerInfo++;
-        }
-
-        render_game(pGame);
-
-        if (!firstStart) {
+        // Initiates only one time.
+        if (!pGame->initStart) {
+          update_Names(pGame);
+          render_game(pGame);
           countDown(pGame);
-          firstStart++;
+          pGame->initStart++;
         }
 
         // Update new recived data
@@ -163,29 +178,32 @@ void run(Game *pGame) {
           update_ServerData(pGame);
         }
 
+        render_game(pGame);
+
+        // Side note: This one leads to a segmentation fault
+        if (!Mix_PlayingMusic()) Mix_PlayMusic(pGame->pMusic, -1);
+
+        // Ifall one player is alive, new round
+        if (pGame->collision == 1) new_game(pGame);
+
         // Looking if there is an input
         if (SDL_PollEvent(&event)) {
           if (event.type == SDL_QUIT) {
             closeRequest = 1;
-            disconnect(pGame);
+            clientCommand(pGame, 0);
           }
           else input_handler(pGame, &event);
         }
 
-        // Side note: This one leads to a segmentation fault
-        if (!Mix_PlayingMusic()) {
-          Mix_PlayMusic(pGame->pMusic, -1);
-        }
-
-        //Check if one Snake left, if so reset game and display winner (filip)
+        //Check if one Snake left
         collision_counter(pGame);
-        if (pGame->collided == 1) reset_game(pGame);
 
       break;
       // Main Menu
       case MENU:
 
-        if ( !render_scene(pGame, text_index) ) closeRequest = 1;
+        // Render a choosen scene
+        if ( !render_scene(pGame) ) closeRequest = 1;
         
         // Looking if there is an input
         if (SDL_PollEvent(&event)) {
@@ -196,25 +214,25 @@ void run(Game *pGame) {
             // Arrow up, W
             if (event.key.keysym.scancode == SDL_SCANCODE_UP || event.key.keysym.scancode == SDL_SCANCODE_W) {
               Mix_PlayMusic(pGame->pClickSound, 0);
-              text_index -= 1;
-              if (text_index < 0) text_index = 0;
+              pGame->textIndex -= 1;
+              if (pGame->textIndex < 0) pGame->textIndex = 0;
             }
 
             // Arrow down, S
             if (event.key.keysym.scancode == SDL_SCANCODE_DOWN || event.key.keysym.scancode == SDL_SCANCODE_S) {
               Mix_PlayMusic(pGame->pClickSound, 0);
-              text_index += 1;
-              if (text_index > 1) text_index = 1;
+              pGame->textIndex += 1;
+              if (pGame->textIndex > 1) pGame->textIndex = 1;
             }
 
             // Select content (Space)
             if (event.key.keysym.scancode == SDL_SCANCODE_SPACE) {
               Mix_PlayMusic(pGame->pSelectSound, 0);
               // START GAME
-              if (text_index == 0) pGame->scene = BUILD_SCENE;
+              if (pGame->textIndex == 0) pGame->scene = BUILD_SCENE;
 
               // QUIT
-              if (text_index == 1) closeRequest = 1;
+              if (pGame->textIndex == 1) closeRequest = 1;
             }
 
           }
@@ -222,9 +240,7 @@ void run(Game *pGame) {
         }
 
         // Update new recived data
-        if (SDLNet_UDP_Recv(pGame->pSocket, pGame->pPacket)) {
-          update_ServerData(pGame);
-        }
+        if (SDLNet_UDP_Recv(pGame->pSocket, pGame->pPacket)) update_ServerData(pGame);
 
       break;
     }
@@ -232,17 +248,23 @@ void run(Game *pGame) {
 
 }
 
+/* Count down from 3 */
 void countDown(Game *pGame) {
 
+  // Three
   draw_text(pGame->pNumThree);
   SDL_RenderPresent(pGame->pRenderer);
   Mix_PlayMusic(pGame->pSelectSound, 0);
   SDL_Delay(1000);
+
+  // Two
   render_game(pGame);
   draw_text(pGame->pNumTwo);
   SDL_RenderPresent(pGame->pRenderer);
   Mix_PlayMusic(pGame->pSelectSound, 0);
   SDL_Delay(1000);
+
+  // One
   render_game(pGame);
   draw_text(pGame->pNumOne);
   SDL_RenderPresent(pGame->pRenderer);
@@ -256,23 +278,22 @@ void create_snakePointers(Game *pGame) {
 
   for(int i = 0; i < MAX_SNKES; i++) {
 
-    Snake *otherSnakes[MAX_SNKES - 1];
-    int otherSnakesIndex = 0;
+    int oppIndex = 0;
+    Snake *opponents[MAX_SNKES - 1];
 
     // Looping through all the other snakes to add them to the array
-    for (int j = 0; j < MAX_SNKES; j++) {
-      if (j != i) otherSnakes[otherSnakesIndex++] = pGame->pSnke[j];
-    }
+    for (int j = 0; j < MAX_SNKES; j++)
+      if (j != i) opponents[oppIndex++] = pGame->pSnke[j];
   
     // Update snake cord, send data
-    update_snake(pGame->pSnke[i], otherSnakes, MAX_SNKES - 1);
+    update_snake(pGame->pSnke[i], opponents, MAX_SNKES - 1);
 
   }
 
 }
 
 /* Show the selected scene */
-int render_scene(Game *pGame, int index) {
+int render_scene(Game *pGame) {
 
   switch (pGame->scene) {
     case MENU_SCENE:
@@ -281,7 +302,7 @@ int render_scene(Game *pGame, int index) {
       draw_text(pGame->pTitleSmallText);
       draw_text(pGame->pTitleBigText);
       // Highligt specific content
-      highlight_text(pGame, index);
+      highlight_text(pGame, pGame->textIndex);
     break;
     case BUILD_SCENE:
       if ( !build_handler(pGame) ) return 0;
@@ -289,6 +310,10 @@ int render_scene(Game *pGame, int index) {
     case LOBBY_SCENE:
       looby(pGame);
     break;
+    case WINNER_SCENE:
+      winner(pGame);
+    break;
+
   }
 
   // Update screen
@@ -298,25 +323,82 @@ int render_scene(Game *pGame, int index) {
 
 }
 
+/* Render who won the game */
+void winner(Game *pGame) {
+
+  Mix_PlayMusic(pGame->pWinSound, 0);
+  draw_interface(pGame);
+  find_winner(pGame);
+  SDL_RenderPresent(pGame->pRenderer);
+
+  SDL_Delay(5000);
+
+  pGame->scene = MENU_SCENE;
+  pGame->state = MENU;
+
+}
+
+/* Find who the winner is, based on the highest score */
+void find_winner(Game *pGame) {
+
+  // Find who has the highest score
+  int maxNum = 0, minNum = 0, player = 0;
+  for(int i = 0; i < MAX_SNKES; i++) {
+
+    for(int j = 0; j < MAX_SNKES; j++) {
+
+      if (minNum < pGame->scoreNum[i]) {
+        minNum = pGame->scoreNum[i];
+        player = i;
+      }
+
+      if (maxNum < minNum) {
+        maxNum = minNum;
+        player = player;
+      }
+
+    }
+
+  }
+
+  // Render the winner
+  char Winner[INPUT_BUFFER_SIZE] = "";
+  strcat(Winner, "The Winner is ");
+  strcat(Winner, pGame->playerNames[player]);
+
+  pGame->pWinner = create_text(pGame->pRenderer, 255, 255, 255, pGame->pStrdFont,
+    Winner, (WINDOW_WIDTH + 205) / 2, WINDOW_HEIGHT / 2);
+
+  if (!pGame->pWinner) {
+    printf("Error: %s\n", SDL_GetError());
+    close(pGame);
+  }
+
+  draw_text(pGame->pWinner);
+
+}
+
+/* Render the background of the game */
 void render_background(Game *pGame) {
 
   SDL_SetRenderDrawColor(pGame->pRenderer, 9, 66, 100, 255); // Dark Blue
   SDL_RenderClear(pGame->pRenderer);
   SDL_SetRenderDrawColor(pGame->pRenderer, 7, 52, 80, 255);  // Darker color then the previous
 
+  // Creates small rect in a checkboard pattern
   for (int i = 0; i <= WINDOW_WIDTH; i += 10) {
     for(int j = 0; j <= WINDOW_HEIGHT; j += 10) {
       SDL_Rect pointRect = { i - POINT_SIZE / 2, j - POINT_SIZE / 2, POINT_SIZE, POINT_SIZE };
-      SDL_RenderFillRect(pGame->pRenderer, &pointRect);      // Creates a small rect
+      SDL_RenderFillRect(pGame->pRenderer, &pointRect);
     }
   }
 
 }
 
-/* Render a background for the game */
+/* Render a element for the game */
 void render_elements(Game *pGame) {
 
-  // Render the background color
+  // Render the background
   render_background(pGame);
 
   // Baner
@@ -361,7 +443,7 @@ void render_elements(Game *pGame) {
 
 }
 
-/* Render things for the game to the window */
+/* Render snakes, trail and names for the game to the window */
 void render_game(Game *pGame) {
 
   draw_interface(pGame);
@@ -380,7 +462,7 @@ void render_game(Game *pGame) {
 void draw_snakeName(Game *pGame, int i) {
 
   pGame->pSnkeName = create_text(pGame->pRenderer, 255, 255, 255, pGame->pNameFont,
-    pGame->SnakeNames[i], pGame->pSnke[i]->xCord + 3, pGame->pSnke[i]->yCord - 10);
+    pGame->playerNames[i], pGame->pSnke[i]->xCord + 3, pGame->pSnke[i]->yCord - 10);
 
   if (!pGame->pSnkeName) {
     printf("Error: %s\n", SDL_GetError());
@@ -391,7 +473,7 @@ void draw_snakeName(Game *pGame, int i) {
 
 }
 
-/* Function to highligt specific content */
+/* Function to highligt a specific content */
 void highlight_text(Game *pGame, int index) {
 
   if (index == 0) {
@@ -406,8 +488,10 @@ void highlight_text(Game *pGame, int index) {
 
 /* Render scene lobby */
 void looby(Game *pGame) {
-  render_elements(pGame);
+
+  render_background(pGame);
   draw_text(pGame->pWaitingText);
+
 }
 
 /* Manage various inputs (keypress, mouse) */
@@ -441,9 +525,9 @@ void input_handler(Game *pGame, SDL_Event *pEvent) {
 }
 
 /* 
-*  Build scene and text handler.
-*  Text handler to be able to type input to window with SDL_StartTextInput()
-*  It returns two values, ipAddr and playerName, to struct Game (pGame)
+ * Build scene and text handler.
+ * Text handler to be able to type input to window with SDL_StartTextInput()
+ * It returns two values, ipAddr and playerName, to struct Game (pGame)
 */
 int build_handler(Game *pGame) {
 
@@ -458,7 +542,7 @@ int build_handler(Game *pGame) {
   int hasErased = 0;
 
   // Input mananger
-  int input_index = 0;
+  int inputIndex = 0;
 
   // Input values
   char clientName[INPUT_BUFFER_SIZE] = "";
@@ -478,7 +562,7 @@ int build_handler(Game *pGame) {
         case SDL_TEXTINPUT:
 
           // Enter Player Name
-          if (input_index == 0) {
+          if (inputIndex == 0) {
             if (clientName_pos < INPUT_BUFFER_SIZE) {
               strcat(clientName, event.text.text);
               clientName_pos += strlen(event.text.text);
@@ -486,7 +570,7 @@ int build_handler(Game *pGame) {
           }
 
           // Enter Ip Address
-          if (input_index == 1) {
+          if (inputIndex == 1) {
             if (ipAddr_pos < 15) {
               strcat(ipAddr, event.text.text);
               ipAddr_pos += strlen(event.text.text);
@@ -514,25 +598,25 @@ int build_handler(Game *pGame) {
           // Change between clientName (0) or ipAddr (1)
           if (event.key.keysym.sym == SDLK_UP) {
             Mix_PlayMusic(pGame->pClickSound, 0);
-            input_index -= 1;
-            if (input_index < 0) input_index = 0;
+            inputIndex -= 1;
+            if (inputIndex < 0) inputIndex = 0;
           }
 
           if (event.key.keysym.sym == SDLK_DOWN) {
             Mix_PlayMusic(pGame->pClickSound, 0);
-            input_index += 1;
-            if (input_index > 1) input_index = 1;
+            inputIndex += 1;
+            if (inputIndex > 1) inputIndex = 1;
           }
 
           // Erase a char clientName (0) or ipAddr (1)
-          if (input_index == 0) {
+          if (inputIndex == 0) {
             if (event.key.keysym.sym == SDLK_BACKSPACE && clientName_pos > 0) {
               clientName[clientName_pos - 1] = '\0';
               clientName_pos--;
             }
           }
 
-          if (input_index == 1) {
+          if (inputIndex == 1) {
             if (event.key.keysym.sym == SDLK_BACKSPACE && ipAddr_pos > 0) {
               ipAddr[ipAddr_pos - 1] = '\0';
               ipAddr_pos--;
@@ -543,7 +627,7 @@ int build_handler(Game *pGame) {
       }
     }
 
-    // Erase space in input when starting
+    // Erase a space character when typing for the first time
     if (!hasErased) {
       for (int i = 0, j = 0, k = 0; i < 2; i++) {
         if (clientName[i] != ' ') {
@@ -625,8 +709,8 @@ int build_handler(Game *pGame) {
     // Colors dark version
     SDL_Color dark_text_color = { 153, 153, 153, 255 };
 
-    // Highlight the chosen input_index
-    if (input_index == 0) {
+    // Highlight the chosen inputIndex
+    if (inputIndex == 0) {
       SDL_Surface* client_surface = TTF_RenderText_Solid(pGame->pStrdFont, clientName, text_color);
       SDL_Texture* client_texture = SDL_CreateTextureFromSurface(pGame->pRenderer, client_surface);
       SDL_Surface* ipAddr_surface = TTF_RenderText_Solid(pGame->pStrdFont, ipAddr, dark_text_color);
@@ -638,7 +722,7 @@ int build_handler(Game *pGame) {
       draw_text(pGame->pMessName);
     }
 
-    if (input_index == 1) {
+    if (inputIndex == 1) {
       SDL_Surface* client_surface = TTF_RenderText_Solid(pGame->pStrdFont, clientName, dark_text_color);
       SDL_Texture* client_texture = SDL_CreateTextureFromSurface(pGame->pRenderer, client_surface);
       SDL_Surface* ipAddr_surface = TTF_RenderText_Solid(pGame->pStrdFont, ipAddr, text_color);
@@ -663,8 +747,8 @@ int build_handler(Game *pGame) {
 
   // Has not exited build_handler function
   if (!ESC) {
-    if ( !conn_server(pGame) ) return 0;
-    clientReady(pGame);
+    if ( !init_connection(pGame) ) return 0;
+    clientCommand(pGame, 1);
   }
 
   return 1;
@@ -672,12 +756,12 @@ int build_handler(Game *pGame) {
 }
 
 /**
-*  Establish a client to server connection.
-*  Text prompt to enter IP address.
-*  \param pSocket Open a UDP network socket.
-*  \param pPacket Allocate/resize/free a single UDP packet.
+ * Establish a client to server connection.
+ * Text prompt to enter IP address.
+ * \param pSocket Open a UDP network socket.
+ * \param pPacket Allocate/resize/free a single UDP packet.
 */
-int conn_server(Game *pGame) {
+int init_connection(Game *pGame) {
 
   if ( !(pGame->pSocket = SDLNet_UDP_Open(UDP_CLIENT_PORT)) ) {
     printf("SDLNet_UDP_Open: %s\n", SDLNet_GetError());
@@ -701,27 +785,16 @@ int conn_server(Game *pGame) {
 
 }
 
-/* Wrap in packet that client is ready */
-void clientReady(Game *pGame) {
+/**
+ * Client is ready to play 
+ * \param command If 0 client is disconnecting, otherwise ready.
+*/
+void clientCommand(Game *pGame, int command) {
 
   ClientData cData;
 
   cData.command = READY;
-  cData.snkeNumber = -1;
-  strcpy(cData.clientName, pGame->myName);
-  memcpy(pGame->pPacket->data, &cData, sizeof(ClientData));
-	pGame->pPacket->len = sizeof(ClientData);
-
-  SDLNet_UDP_Send(pGame->pSocket, -1, pGame->pPacket);
-
-}
-
-/* When player has closed window or left the game */
-void disconnect(Game *pGame) {
-  
-  ClientData cData;
-
-  cData.command = DISC;
+  if (!command) cData.command = DISC;
   cData.snkeNumber = -1;
   strcpy(cData.clientName, pGame->myName);
   memcpy(pGame->pPacket->data, &cData, sizeof(ClientData));
@@ -732,13 +805,14 @@ void disconnect(Game *pGame) {
 }
 
 /* Update the names of every client in the game */
-void update_PlayerInfo(Game *pGame) {
+void update_Names(Game *pGame) {
 
   ServerData sData;
 
   memcpy(&sData, pGame->pPacket->data, sizeof(ServerData));
   for (int i = 0; i < MAX_SNKES; i++) {
-    strcpy(pGame->SnakeNames[i], sData.playerName[i]);
+    strcpy(pGame->playerNames[i], sData.playerName[i]);
+    strcpy(pGame->scoreText[i], "0");
   }
 
 }
@@ -754,6 +828,8 @@ void update_ServerData(Game *pGame) {
 
   for (int i = 0; i < MAX_SNKES; i++) {
     update_recived_snake_data(pGame->pSnke[i], &(sData.snakes[i]));
+    sprintf(pGame->scoreText[i], "%d", sData.died[i]);
+    pGame->scoreNum[i] = sData.died[i];
   }
 
 }
@@ -785,15 +861,25 @@ void draw_interface(Game* pGame) {
   SDL_SetRenderDrawColor(pGame->pRenderer, 58, 103, 131, 255);
   SDL_RenderFillRect(pGame->pRenderer, &field_rect);
 
-  // Render the leaderboard
+  if (pGame->scene != WINNER_SCENE) render_round(pGame);
+
+  // Render "Player - P"
   draw_text(pGame->pBoardInfo);
+
+  // Render the leaderboard
   for(int i = 0; i < MAX_SNKES; i++) {
 
     SDL_SetRenderDrawColor(pGame->pRenderer, 255, 255, 255, 255);
-    SDL_RenderDrawLine(pGame->pRenderer, 13, 46 + txtY, 185, 46 + txtY);
+    SDL_RenderDrawLine(pGame->pRenderer, 13, 61 + txtY, 185, 61 + txtY);
     
+    char strInfo[INPUT_BUFFER_SIZE] = "";
+
+    strcat(strInfo, pGame->playerNames[i]);
+    strcat(strInfo, " - ");
+    strcat(strInfo, pGame->scoreText[i]);
+
     pGame->pBoardText = create_text(pGame->pRenderer, 255, 255, 255, pGame->pStrdFont,
-    pGame->SnakeNames[i], 55, 65 + txtY);
+      strInfo, (WINDOW_WIDTH - 695) / 2, 85 + txtY);
 
     if (!pGame->pBoardText) {
       printf("Error: %s\n", SDL_GetError());
@@ -801,52 +887,84 @@ void draw_interface(Game* pGame) {
     }
 
     draw_text(pGame->pBoardText);
-    txtY += 35;
+    txtY += 45;
 
   }
   
 }
 
-/* Checks nrOfCollisions, if 1 snake alive sets collided to 1 */
+/* Render what current round the players are playing */
+void render_round(Game *pGame) {
+
+  char round[10] = "";
+  sprintf(round, "%d", pGame->roundCount + 1);
+  strcat(round, "/3");
+
+  pGame->pRoundText = create_text(pGame->pRenderer, 255, 255, 255, pGame->pStrdFont,
+    "Round", (WINDOW_WIDTH - 695) / 2, WINDOW_HEIGHT- 120);
+
+  pGame->pRoundNum = create_text(pGame->pRenderer, 255, 255, 255, pGame->pNumberFont,
+    round, (WINDOW_WIDTH - 695) / 2, WINDOW_HEIGHT - 70);
+
+  if (!pGame->pRoundNum || !pGame->pRoundText) {
+    printf("Error: %s\n", SDL_GetError());
+    close(pGame);
+  }
+
+  draw_text(pGame->pRoundText);
+  draw_text(pGame->pRoundNum);
+
+}
+
+/* Check if there is one snake left alive to trigger flag collision to 1 */
 void collision_counter(Game *pGame) {
 
-  int nrOfCollisions = 0;
-  for (int i = 0; i < MAX_SNKES; i++) {
-    if (pGame->pSnke[i]->snakeCollided == 1) nrOfCollisions++;
-  }
+  int numOfCollision = 0;
+  for (int i = 0; i < MAX_SNKES; i++)
+    if (pGame->pSnke[i]->snakeCollided == 1) numOfCollision++;
 
-  if (nrOfCollisions >= MAX_SNKES - 1) pGame->collided = 1;
+  if (numOfCollision >= MAX_SNKES - 1) pGame->collision = 1;
 
 }
 
-/* Sets the game state to START and resets to default values */
-void reset_game(Game *pGame) {
+/* Function to display the winner and reset values to default */
+void finish_game(Game *pGame) {
+
+  pGame->initStart = 0;
+  pGame->textIndex = 0;
+  pGame->textIndex = 0;
+  pGame->roundCount = 0;
+  pGame->currentClients = 0;
+  pGame->scene = WINNER_SCENE;
+  render_scene(pGame);
+
+}
+
+/* Check if a new round should start or to display the winner */
+void new_game(Game *pGame) {
+
+  pGame->collision = 0;
+  pGame->roundCount += 1;
+  Mix_PauseMusic();
   
-  for (int i = 0; i < MAX_SNKES; i++) {
+  for (int i = 0; i < MAX_SNKES; i++)
     reset_snake(pGame->pSnke[i], i);
-  }
 
-  pGame->roundCount++;
-  pGame->collided = 0;
-
-  if(pGame->roundCount == MAX_ROUNDS) {
-    pGame->scene = MENU_SCENE;
-    pGame->state = MENU;
-    pGame->roundCount = 0;
-  } else {
-    countDown(pGame);
+  if (pGame->roundCount == MAX_ROUNDS) {
+    finish_game(pGame);
   }
+  else countDown(pGame);
   
 }
 
 /* Create own font with create_font function. Value is stored in a Text pointer. */
-int create_allFonts(Game *pGame) {
+int init_allFonts(Game *pGame) {
 
-  pGame->pTitleBigFont = create_font(pGame->pTitleBigFont, "../lib/resources/ATW.ttf", 150);
-  pGame->pTitleSmallFont = create_font(pGame->pTitleSmallFont, "../lib/resources/ATW.ttf", 110);
-  pGame->pNumberFont = create_font(pGame->pStrdFont, "../lib/resources/PixeloidSansBold-PKnYd.ttf", 50);
-  pGame->pStrdFont = create_font(pGame->pStrdFont, "../lib/resources/PixeloidSansBold-PKnYd.ttf", 25);
-  pGame->pNameFont = create_font(pGame->pNameFont, "../lib/resources/PixeloidSansBold-PKnYd.ttf", 15);
+  pGame->pTitleBigFont = create_font(pGame->pTitleBigFont, "../lib/resources/fonts/ATW.ttf", 150);
+  pGame->pTitleSmallFont = create_font(pGame->pTitleSmallFont, "../lib/resources/fonts/ATW.ttf", 110);
+  pGame->pNumberFont = create_font(pGame->pNumberFont, "../lib/resources/fonts/PixeloidSansBold-PKnYd.ttf", 50);
+  pGame->pStrdFont = create_font(pGame->pStrdFont, "../lib/resources/fonts/PixeloidSansBold-PKnYd.ttf", 25);
+  pGame->pNameFont = create_font(pGame->pNameFont, "../lib/resources/fonts/PixeloidSansBold-PKnYd.ttf", 15);
 
   if (!pGame->pNumberFont || !pGame->pNameFont || !pGame->pTitleBigFont || !pGame->pTitleSmallFont || !pGame->pStrdFont) {
     printf("Error: %s\n", SDL_GetError());
@@ -859,7 +977,7 @@ int create_allFonts(Game *pGame) {
 }
 
 /* Create own text with create_text function. Value is stored in a Text pointer. */
-int create_allText(Game *pGame) {
+int init_allText(Game *pGame) {
 
   pGame->pTitleSmallText = create_text(pGame->pRenderer, 38, 175, 255, pGame->pTitleSmallFont,
     "Trail", WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 - 180);
@@ -898,7 +1016,7 @@ int create_allText(Game *pGame) {
     "Enter Player Name", WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 - 135);
 
   pGame->pBoardInfo = create_text(pGame->pRenderer, 255, 255, 255, pGame->pStrdFont,
-    "Player  -  P", (WINDOW_WIDTH - 695) / 2, 25);
+    "Player - P", (WINDOW_WIDTH - 695) / 2, 35);
 
   pGame->pNumThree = create_text(pGame->pRenderer, 255, 255, 255, pGame->pNumberFont,
     "3", (WINDOW_WIDTH + 205) / 2, WINDOW_HEIGHT / 2);
@@ -923,8 +1041,8 @@ int create_allText(Game *pGame) {
 }
 
 /* 
-*  Create all snakes (players) in the array.
-*  Checking for errors.
+ * Create all snakes (players) in the array.
+ * Checking for errors.
 */
 int init_allSnakes(Game *pGame) {
 
@@ -944,9 +1062,9 @@ int init_allSnakes(Game *pGame) {
 /* Initiate image load */
 int init_image(Game *pGame) {
 
-  pGame->pSpaceSurface = IMG_Load("../lib/resources/space.png");
-  pGame->pEnterSurface = IMG_Load("../lib/resources/enter.png");
-  pGame->pEscSurface = IMG_Load("../lib/resources/esc.png");
+  pGame->pSpaceSurface = IMG_Load("../lib/resources/pictures/space.png");
+  pGame->pEnterSurface = IMG_Load("../lib/resources/pictures/enter.png");
+  pGame->pEscSurface = IMG_Load("../lib/resources/pictures/esc.png");
   if (!pGame->pSpaceSurface || !pGame->pEnterSurface || !pGame->pEscSurface) {
     SDL_FreeSurface(pGame->pSpaceSurface);
     SDL_FreeSurface(pGame->pEnterSurface);
@@ -977,17 +1095,20 @@ int init_Music(Game *pGame) {
     printf("Failed to initialize SDL_mixer: %s\n", Mix_GetError());
     return 0;
   }
+
   if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0) {
     printf("Failed to open audio device: %s\n", Mix_GetError());
     Mix_Quit();
     SDL_Quit();
     return 0;
   }
-  pGame->pClickSound = Mix_LoadMUS("../lib/resources/click_sound.wav");
-  pGame->pSelectSound = Mix_LoadMUS("../lib/resources/select_sound.wav");
-  pGame->pMusic = Mix_LoadMUS("../lib/resources/game_music.mp3");
 
-  if(!pGame->pMusic || !pGame->pClickSound || !pGame->pSelectSound) {
+  pGame->pClickSound = Mix_LoadMUS("../lib/resources/sounds/click_sound.wav");
+  pGame->pSelectSound = Mix_LoadMUS("../lib/resources/sounds/select_sound.wav");
+  pGame->pWinSound = Mix_LoadMUS("../lib/resources/sounds/win_sound.wav");
+  pGame->pMusic = Mix_LoadMUS("../lib/resources/sounds/game_music.mp3");
+
+  if(!pGame->pMusic || !pGame->pClickSound || !pGame->pSelectSound || !pGame->pWinSound) {
     printf("Failed to load music: %s\n", Mix_GetError());
     Mix_CloseAudio();
     Mix_Quit();
@@ -1028,6 +1149,12 @@ void close(Game *pGame) {
   if (pGame->pNumThree) destroy_text(pGame->pNumThree);
   if (pGame->pNumTwo) destroy_text(pGame->pNumTwo);
   if (pGame->pNumOne) destroy_text(pGame->pNumOne);
+  if (pGame->pRoundText) destroy_text(pGame->pRoundText);
+  if (pGame->pRoundNum) destroy_text(pGame->pRoundNum);
+  if (pGame->pSelectText) destroy_text(pGame->pSelectText);
+  if (pGame->pContinueText) destroy_text(pGame->pContinueText);
+  if (pGame->pScoreText) destroy_text(pGame->pScoreText);
+  if (pGame->pWinner) destroy_text(pGame->pWinner);
 
   // Close fonts
   if (pGame->pTitleSmallFont) TTF_CloseFont(pGame->pTitleSmallFont);
@@ -1039,6 +1166,7 @@ void close(Game *pGame) {
   // Free music
   Mix_FreeMusic(pGame->pClickSound); 
   Mix_FreeMusic(pGame->pSelectSound);
+  Mix_FreeMusic(pGame->pWinSound);
   Mix_FreeMusic(pGame->pMusic);
   Mix_CloseAudio();
   Mix_Quit();

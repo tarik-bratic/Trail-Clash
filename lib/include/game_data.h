@@ -1,19 +1,18 @@
-#ifndef data_h
-#define data_h
+#ifndef game_data_h
+#define game_data_h
 
 /* CONST VERIABLES */
 #define PI 3.14
 
-#define INPUT_BUFFER_SIZE 128
+#define INPUT_BUFFER_SIZE 16
 
 #define POINT_SIZE 2
 #define WINDOW_WIDTH 900
 #define WINDOW_HEIGHT 560
 
 #define MAX_ITEMS 1
-#define MAX_SNKES 2
+#define MAX_SNKES 4
 #define MAX_ROUNDS 3
-
 
 #define MAX_TRAIL_POINTS 100000000
 
@@ -26,7 +25,7 @@ enum gameState { MENU, RUNNING };
 typedef enum gameState GameState;
 
 /* Game Scene struct */
-enum gameScene { MENU_SCENE, BUILD_SCENE, LOBBY_SCENE };
+enum gameScene { MENU_SCENE, BUILD_SCENE, LOBBY_SCENE, WINNER_SCENE };
 typedef enum gameScene GameScene;
 
 /* Client Command struct */
@@ -35,22 +34,23 @@ typedef enum clientCommand ClientCommand;
 
 /* Client Data struct */
 struct clientData {
-    ClientCommand command;
-    int snkeNumber;
-    char clientName[INPUT_BUFFER_SIZE];
+
+  ClientCommand command;
+  int snkeNumber;
+  char clientName[INPUT_BUFFER_SIZE];
+
 };
 typedef struct clientData ClientData;
 
 /* Snake Data struct */
 struct snakeData {
 
-    float xCord, yCord;
-    float xVel, yVel;
-    int angle, alive;
-    int trailLength;
-    int trailCounter;
-    int snakeCollided;
-    int color;
+  float xCord, yCord;
+  float xVel, yVel;
+  int angle, alive;
+  int trailLength;
+  int snakeCollided;
+  int color;
 
 };
 typedef struct snakeData SnakeData; 
@@ -58,11 +58,12 @@ typedef struct snakeData SnakeData;
 /* Server Data struct */
 struct serverData {
 
-    int snkeNum;
-    SnakeData snakes[MAX_SNKES];
-    GameState gState;
-    int maxClients;
-    char playerName[MAX_SNKES][INPUT_BUFFER_SIZE];
+  int snkeNum;
+  SnakeData snakes[MAX_SNKES];
+  GameState gState;
+  int maxClients;
+  char playerName[MAX_SNKES][INPUT_BUFFER_SIZE];
+  int died[MAX_SNKES];
 
 };
 typedef struct serverData ServerData;
@@ -78,7 +79,6 @@ struct snake {
   int wind_Width, wind_Height;
 
   int trailLength;
-  int trailCounter;
   int snakeCollided;
   int color;
   int gapTrailCounter;     
@@ -93,5 +93,15 @@ struct snake {
 
 };
 typedef struct snake Snake;
+
+/* Text struct */
+struct text {
+
+    SDL_Rect txtRect;
+    SDL_Texture *pTexture;
+    SDL_Renderer *pRenderer;
+
+};
+typedef struct text Text;
 
 #endif

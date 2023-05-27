@@ -1,5 +1,5 @@
-#ifndef init_h
-#define init_h
+#ifndef sdl_init_h
+#define sdl_init_h
 
 int init_sdl_libraries();
 SDL_Window *client_wind(const char *title, SDL_Window *pWindow);

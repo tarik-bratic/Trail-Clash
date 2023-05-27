@@ -2,8 +2,8 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
 #include <SDL2/SDL_net.h>
-#include "../include/data.h"
-#include "../include/init.h"
+#include "../include/sdl_init.h"
+#include "../include/game_data.h"
 
 /**
  * Initialize necesery SDL libraries.
