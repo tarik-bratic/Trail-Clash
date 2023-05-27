@@ -12,10 +12,11 @@
 #include "../lib/include/text.h"
 #include "../lib/include/init.h"
 #include "../lib/include/snake.h"
-#include "../lib/include/item.h"
 
 /* Server Game struct */
 typedef struct game {
+
+  int roundCount;
 
   // SNAKE
   SDL_Window *pWindow;
@@ -23,22 +24,12 @@ typedef struct game {
   Snake *pSnke[MAX_SNKES];
   int collided;
 
-  int roundCount;
-
   // NETWORK
   UDPsocket pSocket;
   UDPpacket *pPacket;
   IPaddress clients[MAX_SNKES];
   ServerData sData;
   int connected_Clients;
-
-  //ITEM
-  ItemImage *pItemImage[MAX_ITEMS];
-  Item *pItems[MAX_ITEMS];
-  int numItems;
-
-  //TIMER
-  int startTime;
 
   GameState state;
 
@@ -48,15 +39,14 @@ int init_structure(Game *pGame);
 void run(Game *pGame);
 void close(Game *pGame);
 
-int init_Items(Game *pGame);
 int init_allSnakes(Game *pGame);
-int spawnItem(Game *pGame, int NrOfItems);
 int create_server(Game *pGame);
-void collision_counter(Game *pGame);
 void reset_game(Game *pGame);
 void set_up_game(Game *pGame);
 void render_game(Game *pGame);
 void send_gameData(Game *pGame);
+void create_snakePointers(Game *pGame);
+void collision_counter(Game *pGame);
 void execute_command(Game *pGame, ClientData cData);
 void add_client(Game *pGame, IPaddress address, IPaddress clients[], int *pNumOfClients);
 
@@ -83,11 +73,11 @@ int init_structure(Game *pGame) {
   srand(time(NULL));
 
   // Default values
-  pGame->state = START;
-  pGame->numItems = MAX_ITEMS;
+  pGame->state = MENU;
+  pGame->roundCount = 0;
   pGame->connected_Clients = 0;
   pGame->sData.maxClients = MAX_SNKES;
-  pGame->roundCount = 0;
+
   if ( !init_sdl_libraries() ) return 0; 
 
   if ( !create_server(pGame) ) return 0;
@@ -101,8 +91,6 @@ int init_structure(Game *pGame) {
 
   if ( !init_allSnakes(pGame) ) return 0;
 
-  if ( !init_Items(pGame) ) return 0;
-
   return 1;
 
 }
@@ -113,24 +101,31 @@ void run(Game *pGame) {
   SDL_Event event;
   ClientData cData;
 
-  int replace = 0;
-  int boostKey = 0;
-  int nrOfItems = 0;
-  int countdownCompleted = 0;
   int showMess = 0;
-  int waiting = 0;
+  int firstStart = 0;
+  int countdownCompleted = 0;
 
   int closeRequest = 0;
   while(!closeRequest) {
     switch (pGame->state) {
-      case RUNNING: // The game is running
+      // The game is running
+      case RUNNING:
 
         if (showMess) {
           printf("Game state: Running\n");
           showMess--;
         }
+
+        create_snakePointers(pGame);
         
         send_gameData(pGame);
+
+        render_game(pGame);
+
+        if (!firstStart) {
+          SDL_Delay(3000);
+          firstStart++;
+        }
         
         // Update new recived data to client data
         while(SDLNet_UDP_Recv(pGame->pSocket, pGame->pPacket) == 1) {
@@ -146,54 +141,13 @@ void run(Game *pGame) {
           if (event.type == SDL_QUIT) closeRequest = 1;
         }
 
-        nrOfItems = spawnItem(pGame, nrOfItems);
-        // Create an array of pointers to other snakes
-        for(int i = 0; i < MAX_SNKES; i++) {
-
-          Snake *otherSnakes[MAX_SNKES - 1];
-          int otherSnakesIndex = 0;
-
-          // Looping through all the other snakes to add them to the array
-          for (int j = 0; j < MAX_SNKES; j++) {
-            if (j != i) otherSnakes[otherSnakesIndex++] = pGame->pSnke[j];
-          }
-  
-          // Update snake cord
-          update_snake(pGame->pSnke[i], otherSnakes, MAX_SNKES - 1, boostKey);
-
-          for(int j = 0; j < MAX_ITEMS; j++) {
-
-            if(collideSnake(pGame->pSnke[i], getRectItem(pGame->pItems[j]))) {
-              boostKey = 1;
-              pGame->startTime = 0;
-              updateItem(pGame->pItems[j]);
-              nrOfItems--;
-              replace = j;
-            }
-
-            if(boostKey > 0) {
-              pGame->startTime++;
-              if(pGame->startTime == 200) boostKey = 0;
-            }
-
-          }
-
-        }
-
-        render_game(pGame);
-
-        if (!waiting) {
-          SDL_Delay(3000);
-          waiting++;
-        }
-
         //Check if one Snake left, if so reset game and display winner (filip)
         collision_counter(pGame);
-         if (pGame->collided==1) reset_game(pGame);
+        if (pGame->collided == 1) reset_game(pGame);
 
       break;
       // Waiting for all clients
-      case START:
+      case MENU:
 
         if (!showMess) {
           printf("Game state: Start\n");
@@ -216,6 +170,26 @@ void run(Game *pGame) {
 
       break;
     }
+  }
+
+}
+
+/* Create an array of pointers to other snakes */
+void create_snakePointers(Game *pGame) {
+
+  for(int i = 0; i < MAX_SNKES; i++) {
+
+    Snake *otherSnakes[MAX_SNKES - 1];
+    int otherSnakesIndex = 0;
+
+    // Looping through all the other snakes to add them to the array
+    for (int j = 0; j < MAX_SNKES; j++) {
+      if (j != i) otherSnakes[otherSnakesIndex++] = pGame->pSnke[j];
+    }
+  
+    // Update snake cord, send data
+    update_snake(pGame->pSnke[i], otherSnakes, MAX_SNKES - 1);
+
   }
 
 }
@@ -310,7 +284,7 @@ void collision_counter(Game *pGame) {
     if (pGame->pSnke[i]->snakeCollided == 1) nrOfCollisions++;
   }
 
-  if (nrOfCollisions == MAX_SNKES - (MAX_SNKES - 1)) pGame->collided = 1;
+  if (nrOfCollisions >= MAX_SNKES - 1) pGame->collided = 1;
 
 }
 
@@ -325,48 +299,11 @@ void reset_game(Game *pGame) {
   pGame->roundCount++;
 
   if(pGame->roundCount == MAX_ROUNDS){
-    pGame->state = START;
+    pGame->state = MENU;
     pGame->roundCount = 0;
     pGame->connected_Clients = 0;
   } else {
     SDL_Delay(3000);
-  }
-
-}
-
-/* Spawn Item by creating image and creating object */
-int spawnItem(Game *pGame, int NrOfItems) {
-
-  int spawn = rand() % 500;
-
-  if(spawn == 0 && NrOfItems != MAX_ITEMS) {
-    pGame->pItemImage[NrOfItems] = createItemImage(pGame->pRenderer);
-    pGame->pItems[NrOfItems] = createItem(pGame->pItemImage[NrOfItems],WINDOW_WIDTH,WINDOW_HEIGHT, 0, 500, 500); 
-    NrOfItems++;
-  }
-
-  return NrOfItems;
-
-}
-
-/* Creates Items and creates their image */
-int init_Items(Game *pGame) {
-
-  SDL_SetRenderDrawColor(pGame->pRenderer,0,0,0,255);
-  SDL_RenderClear(pGame->pRenderer);
-  SDL_SetRenderDrawColor(pGame->pRenderer,230,230,230,255);
-
-  for (int i = 0; i < MAX_ITEMS; i++) {
-    pGame->pItemImage[i] = createItemImage(pGame->pRenderer);
-    pGame->pItems[i] = createItem(pGame->pItemImage[i], WINDOW_WIDTH, WINDOW_HEIGHT, 0, 500, 500);
-  }
-
-  for (int i = 0; i < MAX_ITEMS; i++) {
-    if (!pGame->pItemImage[i] || !pGame->pItems[i]) {
-      printf("Error: %s", SDL_GetError());
-      close(pGame);
-      return 0;
-    }
   }
 
 }

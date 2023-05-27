@@ -76,10 +76,10 @@ void turn_right(Snake *pSnke) {
 }
 
 /* Update and set new cords and look if player is not outside of the screen */
-void update_snake(Snake *pSnke, Snake **otherSnakes, int nrOfSnakes, int key) {
+void update_snake(Snake *pSnke, Snake **otherSnakes, int nrOfSnakes) {
 
   // Changes distance between snake and trail
-  float trail_offset = 8;
+  float trail_offset = 4;
 
   // Collision has not happened, run code below
   if (!pSnke->snakeCollided) {
@@ -91,11 +91,6 @@ void update_snake(Snake *pSnke, Snake **otherSnakes, int nrOfSnakes, int key) {
     // Update coardinates
     pSnke->xCord += pSnke->xVel = 1.5 * sin(pSnke->angle * (2 * PI/360));
     pSnke->yCord += pSnke->yVel = -(1.5 * cos(pSnke->angle * (2 * PI/360)));
-
-    if(key == 1) {
-      pSnke->xCord += pSnke->xVel * 3;
-      pSnke->yCord += pSnke->yVel * 3;
-    }
     
     // Update snake hitbox to cover only the front part of the head
     pSnke->hitbox.x = pSnke->xCord + pSnke->snkeRect.w / 4;
@@ -214,11 +209,14 @@ static float distance(int x1, int y1, int x2, int y2) {
 /* Reset the snake to default values */
 void reset_snake(Snake *pSnke, int snakeNum) {
 
+  
   pSnke->alive = 1;
-  pSnke->trailLength = 0;
   pSnke->trailCounter = 0;
   pSnke->snakeCollided = 0;
   pSnke->xVel=pSnke->yVel=0;
+  pSnke->gapDuration = 100;
+  pSnke->gapTrailCounter = 0;
+  pSnke->spawnTrailPoints = 1;
   
   if (snakeNum == 0) {
     pSnke->xSrt = pSnke->xCord = pSnke->snkeRect.x = WINDOW_WIDTH / 4 + 50;
@@ -244,12 +242,13 @@ void reset_snake(Snake *pSnke, int snakeNum) {
     pSnke->angle = -50;
   }
 
-  for(int i = 0; i < MAX_TRAIL_POINTS; i++) {
+  for(int i = 0; i < pSnke->trailLength; i++) {
     pSnke->trailPoints[i].x = 0;
     pSnke->trailPoints[i].y = 0;
     pSnke->trailPoints[i].w = 0;
     pSnke->trailPoints[i].h = 0;
   }
+  pSnke->trailLength = 0;
 
 }
 
